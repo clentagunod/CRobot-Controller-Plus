@@ -21,8 +21,8 @@ class BleRepositoryImpl @Inject constructor(
     private val _connectionState = MutableStateFlow<BleConnectionState>(BleConnectionState.Disconnected)
     override val connectionState: MutableStateFlow<BleConnectionState> = _connectionState
 
-    private val _bluetoothState = MutableSharedFlow<BluetoothState>(1, 1)
-    override val bluetoothState: SharedFlow<BluetoothState> = _bluetoothState.asSharedFlow()
+    private val _bluetoothState = MutableStateFlow(if (bleHelper.isBluetoothEnabled()) BluetoothState.BluetoothEnabled else BluetoothState.BluetoothDisabled )
+    override val bluetoothState: MutableStateFlow<BluetoothState> = _bluetoothState
 
 
     init {
@@ -47,8 +47,18 @@ class BleRepositoryImpl @Inject constructor(
         bleHelper.onScanning = {
             _connectionState.value = BleConnectionState.Scanning
         }
-    }
 
+        //Bluetooth Status
+
+        bleHelper.onBluetoothEnabled = {
+            _bluetoothState.value = BluetoothState.BluetoothEnabled
+
+        }
+
+        bleHelper.onBluetoothDisabled = {
+            _bluetoothState.value = BluetoothState.BluetoothDisabled
+        }
+    }
 
 
 

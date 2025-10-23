@@ -11,7 +11,7 @@ interface BleRepository {
 
     val deviceDataFlow: MutableStateFlow<Map<String, BluetoothDevice>>
     val connectionState: MutableStateFlow<BleConnectionState>
-    val bluetoothState: SharedFlow<BluetoothState>
+    val bluetoothState: MutableStateFlow<BluetoothState>
 
     fun startScan(wait: Long)
     fun connectBleDevice(device: BluetoothDevice)

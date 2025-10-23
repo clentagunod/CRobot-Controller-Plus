@@ -196,6 +196,7 @@ class BleHelper(private val context: Context) {
                         BluetoothAdapter.STATE_OFF -> {
                             Log.d(TAG, "Bluetooth Disabled!")
                             onBluetoothDisabled?.invoke()
+                            onDeviceFound?.invoke(emptyMap())
                             onDisconnected?.invoke()
                             disconnect()
 
@@ -259,6 +260,9 @@ class BleHelper(private val context: Context) {
     fun startScan(wait: Long){
         if (isScanning) return
         if (!checkPermission(Manifest.permission.BLUETOOTH_SCAN)) return
+        if (!isBluetoothEnabled()){
+            onBluetoothDisabled?.invoke()
+        }
 
         onScanning?.invoke()
 
@@ -292,8 +296,9 @@ class BleHelper(private val context: Context) {
         if (foundDevices.isNotEmpty()){
             onDeviceFound?.invoke(foundDevices.toMap())
         }else{
-            Log.d(TAG, "No Ble Devices found!")
+            Log.d(TAG, "No Ble Device found!")
         }
+
     }
 
     private fun cleanUp() {

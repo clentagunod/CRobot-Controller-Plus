@@ -2,14 +2,8 @@ package clentlogic.cloy.crobotcontroller.presentation.ui.activity
 
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
-import android.content.ComponentName
-import android.content.Context
 import android.content.Context.MODE_PRIVATE
-import android.content.Intent
-import android.content.ServiceConnection
 import android.os.Bundle
-import android.os.IBinder
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -34,17 +28,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -60,7 +53,6 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
-import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -72,6 +64,7 @@ import clentlogic.cloy.crobotcontroller.R
 import clentlogic.cloy.crobotcontroller.data.communication.ble.BleHelper
 import clentlogic.cloy.crobotcontroller.data.communication.ble.BlePermissionHandler
 import clentlogic.cloy.crobotcontroller.domain.model.BleConnectionState
+import clentlogic.cloy.crobotcontroller.domain.model.BluetoothState
 import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
 import clentlogic.cloy.crobotcontroller.presentation.model.LayoutModel
 import clentlogic.cloy.crobotcontroller.presentation.model.ScreenSize
@@ -79,6 +72,7 @@ import clentlogic.cloy.crobotcontroller.presentation.ui.screen.CheckPermissionCo
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.CRobotControllerTheme
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.DeepTeal
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.LightPink
+import clentlogic.cloy.crobotcontroller.presentation.ui.theme.Pink
 import clentlogic.cloy.crobotcontroller.presentation.viewmodel.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -120,9 +114,10 @@ class MainActivity : ComponentActivity() {
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
 fun MainCompose(
+    blePermissionHandler: BlePermissionHandler,
     viewModel: MainViewContract = hiltViewModel<MainViewModel>()
 ) {
-
+    val bluetoothState by viewModel.bluetoothState.collectAsState()
     val connectionState by viewModel.connectionState.collectAsState()
 
     ToggleSystemBars()
@@ -137,17 +132,18 @@ fun MainCompose(
         )
     }
 
-    var deviceName by rememberSaveable { mutableStateOf("No Device") }
+    var deviceName by rememberSaveable { mutableStateOf( "No Device" )}
+
 
     MainContent(
         screenSize,
         viewModel,
+        bluetoothState,
         connectionState,
+        blePermissionHandler,
         deviceName,
-
-    ){
-        deviceName = it
-    }
+         { deviceName = it }
+        )
 
 }
 
@@ -155,7 +151,9 @@ fun MainCompose(
 fun MainContent(
     screenSize: ScreenSize,
     viewModel: MainViewContract,
+    bluetoothState: BluetoothState,
     connectionState: BleConnectionState,
+    blePermissionHandler: BlePermissionHandler,
     deviceName: String,
     onDeviceNameChange: (String) -> Unit
 ) {
@@ -177,6 +175,8 @@ fun MainContent(
         AvailableDevicesView(
             screenSize,
             viewModel,
+            bluetoothState,
+            blePermissionHandler,
             connectionState,
             onDeviceNameChange
 
@@ -273,14 +273,12 @@ fun DeviceView(
 ) {
 
 
-
     val layout = remember(screenSize) {
         val screenSizeH = screenSize.h * 0.40f
         val padding = (screenSize.h + screenSize.w) * 0.01f
         LayoutModel(screenSizeH = screenSizeH, padding = padding)
 
     }
-
 
 
     Column(
@@ -313,6 +311,8 @@ fun DeviceView(
 fun AvailableDevicesView(
     screenSize: ScreenSize,
     viewModel: MainViewContract,
+    bluetoothState: BluetoothState,
+    blePermissionHandler: BlePermissionHandler,
     connectionState: BleConnectionState,
     onDeviceNameChange: (String) -> Unit
 ) {
@@ -356,7 +356,9 @@ fun AvailableDevicesView(
 
     ScanButton(
         layout,
+        bluetoothState,
         connectionState,
+        blePermissionHandler,
         viewModel
     )
 
@@ -366,7 +368,9 @@ fun AvailableDevicesView(
 @Composable
 fun ScanButton(
     layout: LayoutModel,
+    bluetoothState: BluetoothState,
     connectionState: BleConnectionState,
+    blePermissionHandler: BlePermissionHandler,
     viewModel: MainViewContract
 ) {
 
@@ -377,7 +381,24 @@ fun ScanButton(
         label = "Scan Button"
     )
 
-    if (connectionState == BleConnectionState.Scanning) ScanningLoadingScreen()
+    var enableAlertDialog by remember { mutableStateOf(false)}
+
+    EnableBluetoothAlertDialog(
+        enableAlertDialog,
+        onDismiss = {
+            println("Dismissed")
+            enableAlertDialog = false
+
+        },
+        onConfirm = {
+            println("Confirmed")
+            enableAlertDialog = false
+            blePermissionHandler.enableBluetooth()
+
+        }
+
+    )
+    ScanningLoadingScreen(connectionState == BleConnectionState.Scanning)
 
 
     Row(
@@ -401,7 +422,14 @@ fun ScanButton(
                         indication = null,
                     ) {
                         println("Scan button is clicked!")
-                        viewModel.startScanning(9000L)
+
+                        if (bluetoothState == BluetoothState.BluetoothDisabled){
+                            enableAlertDialog = true
+                        }else{
+                            viewModel.startScanning(9000L)
+                        }
+
+
                     }
             )
             Text(
@@ -415,8 +443,6 @@ fun ScanButton(
     }
 
 }
-
-
 
 
 @Composable
@@ -436,8 +462,9 @@ fun DeviceListView(
         verticalArrangement = Arrangement.spacedBy(layout.padding),
         userScrollEnabled = true
     ) {
-        items(devices.entries.toList()
-        ) {  device ->
+        items(
+            devices.entries.toList()
+        ) { device ->
 
             DeviceListItems(
                 device,
@@ -513,7 +540,7 @@ fun DeviceListItems(
                         .alpha(layout.alpha)
                 )
 
-                if (connectionState != BleConnectionState.Connected){
+                if (connectionState != BleConnectionState.Connected) {
                     isConnected = false
                     onDeviceNameChange("No Device")
 
@@ -555,7 +582,6 @@ fun DeviceListItems(
                 )
 
 
-
             }
 
         }
@@ -581,36 +607,79 @@ fun ToggleSystemBars(hide: Boolean = true) {
 }
 
 @Composable
-fun ScanningLoadingScreen() {
+fun ScanningLoadingScreen(show: Boolean) {
 
-    Popup(
-        alignment = Alignment.Center,
-        onDismissRequest = {}
+    if(show){
+        Popup(
+            alignment = Alignment.Center,
+            onDismissRequest = {}
 
-    ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.5f))
-                .clickable(false) {}
         ) {
-            Row() {
-                Text(
-                    "Scanning devices..",
-                    color = Color.White,
-                    style = MaterialTheme.typography.displaySmall
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                CircularProgressIndicator(
-                    color = Color.White,
-                    strokeWidth = 3.dp
-                )
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .clickable(false) {}
+            ) {
+                Row() {
+                    Text(
+                        "Scanning devices..",
+                        color = Color.White,
+                        style = MaterialTheme.typography.displaySmall
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        strokeWidth = 3.dp
+                    )
+                }
             }
+
         }
 
     }
 
+
+
+}
+
+@Composable
+fun EnableBluetoothAlertDialog(
+    show: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    if (show){
+        AlertDialog(
+            onDismissRequest = { onDismiss() },
+            title = {
+                Text("Enable Bluetooth")
+            },
+            text = {
+
+                Text("Bluetooth is disabled. Please turn on your Bluetooth to start scanning.")
+
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onConfirm()
+                }) {
+                    Text("Yes")
+                }},
+            dismissButton = {
+                TextButton(onClick = {
+                    onDismiss()
+                }) {
+                    Text("No")
+                }},
+            shape = RoundedCornerShape(4.dp),
+            containerColor = DeepTeal,
+            titleContentColor = Color.White,
+            textContentColor = Color.White,
+        )
+
+    }
 
 }
 
@@ -642,7 +711,9 @@ fun AppNavHost(
         }
 
         composable("main") {
-            MainCompose()
+            MainCompose(
+                blePermissionHandler
+            )
         }
     }
 

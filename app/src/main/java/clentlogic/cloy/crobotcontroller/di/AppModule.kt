@@ -13,6 +13,7 @@ import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.DisconnectBle
 import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.SendDataToBle
 import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.callback.GetDeviceDataFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.StartScan
+import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.callback.GetBluetoothStateFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.callback.GetConnectionStateFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.AddCmd
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.DeleteCmd
@@ -75,6 +76,11 @@ object AppModule {
     fun provideGetDisconnectBleDevice(repository: BleRepository): DisconnectBleDevice =
         DisconnectBleDevice(repository)
 
+
+    @Provides
+    @Singleton
+    fun provideSendDataToBle(repository: BleRepository): SendDataToBle = SendDataToBle(repository)
+
     @Provides
     @Singleton
     fun provideGetDeviceDataFlow(repository: BleRepository): GetDeviceDataFlow =
@@ -87,7 +93,11 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideSendDataToBle(repository: BleRepository): SendDataToBle = SendDataToBle(repository)
+    fun provideGetBluetoothStateFlow(repository: BleRepository): GetBluetoothStateFlow =
+        GetBluetoothStateFlow(repository)
+
+
+
 
 
 

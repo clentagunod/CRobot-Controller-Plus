@@ -17,6 +17,7 @@ class BlePermissionHandler(
      private val bleHelper: BleHelper
      ) {
 
+     var bluetoothEnabled = false
 
      private val permissionCallback = activity.registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()){permission ->
           val isPermitted = permission.values.all { it  }
@@ -31,6 +32,7 @@ class BlePermissionHandler(
      private val bluetoothLauncher = activity.registerForActivityResult(ActivityResultContracts.StartActivityForResult()){result ->
           if (result.resultCode == RESULT_OK){
                enableBluetooth()
+               bluetoothEnabled = true
           }else{
                Log.d("BT", "Needs bluetooth to use")
           }
@@ -64,11 +66,15 @@ class BlePermissionHandler(
           }
      }
 
-     private fun enableBluetooth(){
+     fun enableBluetooth() {
           if(!bleHelper.isBluetoothEnabled()){
                val btIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
                bluetoothLauncher.launch(btIntent)
+          }else{
+               bluetoothEnabled = !bluetoothEnabled
           }
+
+
      }
 
 

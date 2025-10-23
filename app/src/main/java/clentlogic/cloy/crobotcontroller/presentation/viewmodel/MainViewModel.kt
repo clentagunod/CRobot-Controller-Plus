@@ -9,11 +9,13 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import clentlogic.cloy.crobotcontroller.domain.model.BleConnectionState
+import clentlogic.cloy.crobotcontroller.domain.model.BluetoothState
 import clentlogic.cloy.crobotcontroller.domain.model.CmdModel
 import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.ConnectBleDevice
 import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.DisconnectBleDevice
 import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.SendDataToBle
 import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.StartScan
+import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.callback.GetBluetoothStateFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.callback.GetConnectionStateFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.callback.GetDeviceDataFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.AddCmd
@@ -37,10 +39,13 @@ class MainViewModel @Inject constructor(
     private val deleteCmd: DeleteCmd,
     private val startScan: StartScan,
     private val connectBleDevice: ConnectBleDevice,
-    private val getDeviceDataFlow: GetDeviceDataFlow,
-    private val getConnectionStateFlow: GetConnectionStateFlow,
     private val disconnectBleDevice: DisconnectBleDevice,
     private val sendDataToBle: SendDataToBle,
+    private val getDeviceDataFlow: GetDeviceDataFlow,
+    private val getConnectionStateFlow: GetConnectionStateFlow,
+    private val getBluetoothStateFlow: GetBluetoothStateFlow
+
+
 
 ): ViewModel(), MainViewContract{
 
@@ -52,9 +57,9 @@ class MainViewModel @Inject constructor(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
 
-
     override val device = getDeviceDataFlow()
     override val connectionState = getConnectionStateFlow()
+    override val bluetoothState = getBluetoothStateFlow()
 
     init {
         loadCmd()
