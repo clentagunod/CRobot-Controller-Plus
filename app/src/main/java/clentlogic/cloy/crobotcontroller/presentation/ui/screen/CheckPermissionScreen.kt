@@ -105,7 +105,7 @@ fun CheckPermissionCompose(
 
 
             Image(
-                painterResource(R.drawable.undraw_smart_home_9s59),
+                painterResource(R.drawable.firmware),
                 contentDescription = "homeImage",
                 modifier = Modifier
                     .align(Alignment.TopCenter)

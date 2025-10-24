@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
 import android.content.Context.MODE_PRIVATE
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -36,6 +37,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,13 +51,10 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.core.content.edit
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -68,11 +67,14 @@ import clentlogic.cloy.crobotcontroller.domain.model.BluetoothState
 import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
 import clentlogic.cloy.crobotcontroller.presentation.model.LayoutModel
 import clentlogic.cloy.crobotcontroller.presentation.model.ScreenSize
+import clentlogic.cloy.crobotcontroller.presentation.ui.components.EnableBluetoothAlertDialog
+import clentlogic.cloy.crobotcontroller.presentation.ui.components.ScanningLoadingScreen
+import clentlogic.cloy.crobotcontroller.presentation.ui.components.ToggleSystemBars
+import clentlogic.cloy.crobotcontroller.presentation.ui.navigation.AppNavHost
 import clentlogic.cloy.crobotcontroller.presentation.ui.screen.CheckPermissionCompose
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.CRobotControllerTheme
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.DeepTeal
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.LightPink
-import clentlogic.cloy.crobotcontroller.presentation.ui.theme.Pink
 import clentlogic.cloy.crobotcontroller.presentation.viewmodel.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -117,11 +119,11 @@ fun MainCompose(
     blePermissionHandler: BlePermissionHandler,
     viewModel: MainViewContract = hiltViewModel<MainViewModel>()
 ) {
+
     val bluetoothState by viewModel.bluetoothState.collectAsState()
     val connectionState by viewModel.connectionState.collectAsState()
 
     ToggleSystemBars()
-
 
     val configuration = LocalConfiguration.current
 
@@ -132,8 +134,7 @@ fun MainCompose(
         )
     }
 
-    var deviceName by rememberSaveable { mutableStateOf( "No Device" )}
-
+    var deviceName by rememberSaveable(bluetoothState) { mutableStateOf( if (bluetoothState == BluetoothState.BluetoothDisabled) "BT disabled" else "No Device" )}
 
     MainContent(
         screenSize,
@@ -398,8 +399,8 @@ fun ScanButton(
         }
 
     )
-    ScanningLoadingScreen(connectionState == BleConnectionState.Scanning)
 
+    ScanningLoadingScreen(connectionState == BleConnectionState.Scanning)
 
     Row(
         horizontalArrangement = Arrangement.Center,
@@ -426,7 +427,7 @@ fun ScanButton(
                         if (bluetoothState == BluetoothState.BluetoothDisabled){
                             enableAlertDialog = true
                         }else{
-                            viewModel.startScanning(9000L)
+                            viewModel.startScanning(2000L)
                         }
 
 
@@ -439,6 +440,7 @@ fun ScanButton(
             )
             Button(onClick = { viewModel.disconnectDevice() }) { Text("Disconnect") }
         }
+        Button(onClick = { viewModel.sendDataToBleDevice("yeahh") }) { Text("Send") }
 
     }
 
@@ -505,6 +507,14 @@ fun DeviceListItems(
 
     val shape = remember { RoundedCornerShape(layout.borderRadius) }
 
+    LaunchedEffect(connectionState) {
+        if (connectionState == BleConnectionState.Disconnected) {
+            isConnected = !isConnected
+            onDeviceNameChange("No Device")
+            Log.d("Main", "Mao ni error! $connectionState")
+        }
+    }
+
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -540,11 +550,7 @@ fun DeviceListItems(
                         .alpha(layout.alpha)
                 )
 
-                if (connectionState != BleConnectionState.Connected) {
-                    isConnected = false
-                    onDeviceNameChange("No Device")
 
-                }
 
             }
 
@@ -581,7 +587,6 @@ fun DeviceListItems(
                         }
                 )
 
-
             }
 
         }
@@ -590,132 +595,5 @@ fun DeviceListItems(
     }
 }
 
-@Composable
-fun ToggleSystemBars(hide: Boolean = true) {
-    val view = LocalView.current
-    val window = (view.context as ComponentActivity).window
-    val windowController = WindowInsetsControllerCompat(window, view)
-
-    if (hide) {
-        windowController.hide(WindowInsetsCompat.Type.systemBars())
-        windowController.systemBarsBehavior =
-            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-    } else {
-        windowController.show(WindowInsetsCompat.Type.systemBars())
-    }
-
-}
-
-@Composable
-fun ScanningLoadingScreen(show: Boolean) {
-
-    if(show){
-        Popup(
-            alignment = Alignment.Center,
-            onDismissRequest = {}
-
-        ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.5f))
-                    .clickable(false) {}
-            ) {
-                Row() {
-                    Text(
-                        "Scanning devices..",
-                        color = Color.White,
-                        style = MaterialTheme.typography.displaySmall
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    CircularProgressIndicator(
-                        color = Color.White,
-                        strokeWidth = 3.dp
-                    )
-                }
-            }
-
-        }
-
-    }
 
 
-
-}
-
-@Composable
-fun EnableBluetoothAlertDialog(
-    show: Boolean,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit
-) {
-    if (show){
-        AlertDialog(
-            onDismissRequest = { onDismiss() },
-            title = {
-                Text("Enable Bluetooth")
-            },
-            text = {
-
-                Text("Bluetooth is disabled. Please turn on your Bluetooth to start scanning.")
-
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    onConfirm()
-                }) {
-                    Text("Yes")
-                }},
-            dismissButton = {
-                TextButton(onClick = {
-                    onDismiss()
-                }) {
-                    Text("No")
-                }},
-            shape = RoundedCornerShape(4.dp),
-            containerColor = DeepTeal,
-            titleContentColor = Color.White,
-            textContentColor = Color.White,
-        )
-
-    }
-
-}
-
-@Composable
-fun AppNavHost(
-    activity: ComponentActivity,
-    blePermissionHandler: BlePermissionHandler
-) {
-    val navController = rememberNavController()
-    val prefs = activity.getSharedPreferences("app_prefs", MODE_PRIVATE)
-    val permissionGranted = prefs.getBoolean("permissions_ok", false)
-
-    NavHost(
-        navController = navController,
-        startDestination = if (permissionGranted) "main" else "check_permission"
-    ) {
-        composable(
-            "check_permission"
-        ) {
-            CheckPermissionCompose(
-                blePermissionHandler,
-                onPermitted = {
-                    prefs.edit { putBoolean("permissions_ok", true) }
-                    navController.navigate("main") {
-                        popUpTo("check_permission") { inclusive = true }
-                    }
-                }
-            )
-        }
-
-        composable("main") {
-            MainCompose(
-                blePermissionHandler
-            )
-        }
-    }
-
-
-}

@@ -33,8 +33,6 @@ class BleHelper(private val context: Context) {
     companion object {
         private const val TARGET_DEVICE = "clent"
         private const val TAG = "BleHelper"
-        private val SERVICE_UUID = UUID.fromString("0000FFF0-0000-1000-8000-00805F9B34FB")
-        private val CHAR_UUID = UUID.fromString("0000FFF1-0000-1000-8000-00805F9B34FB")
         private val DESCRIPTOR_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
     }
 
@@ -113,50 +111,33 @@ class BleHelper(private val context: Context) {
             }
         }
 
-        override fun onServicesDiscovered(
-            gatt: BluetoothGatt?,
-            status: Int
-        ) {
-            super.onServicesDiscovered(gatt, status)
+        override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
+            if (status == BluetoothGatt.GATT_SUCCESS) {
 
-            if (status == BluetoothGatt.GATT_SUCCESS){
-                var foundChar: BluetoothGattCharacteristic? = null
+                val foundServices = mutableListOf<UUID>()
+                val foundChar = mutableListOf<UUID>()
 
 
-                gatt?.services?.forEach { service ->
-                    Log.d(TAG, "Service: ${service.uuid}")
+                gatt?.services?.forEach { services ->
+                    foundServices.add(services.uuid)
 
-                    service.characteristics.forEach { characteristic ->
-                        val props = characteristic.properties
-                        val isWritable = props and BluetoothGattCharacteristic.PROPERTY_WRITE != 0
-                        val isNotifiable =
-                            props and BluetoothGattCharacteristic.PROPERTY_NOTIFY != 0
-
-                        if (isWritable && foundChar == null) {
-                            foundChar = characteristic
-                        }
-
-                        Log.d(
-                            TAG,
-                            " ↳ Char: ${characteristic.uuid} (write=$isWritable, notify=$isNotifiable)"
-                        )
+                    services.characteristics.forEach { characteristic ->
+                        foundChar.add(characteristic.uuid)
                     }
                 }
 
-                txChar = foundChar
+                Log.d(TAG, "Service: ${foundServices.last()}")
+                Log.d(TAG, "Char: ${foundChar.last()}")
+
+                val service = gatt?.getService(foundServices.last())
+                txChar = service?.getCharacteristic(foundChar.last())
 
                 if (txChar != null) {
                     onConnected?.invoke()
-
-                    if (checkPermission(Manifest.permission.BLUETOOTH_CONNECT)){
-                        enableNotification(gatt!!, txChar!!)
-
-                    }
-                }else{
-                    onError?.invoke("Characteristic is null!")
+                    enableNotification(gatt!!, txChar!!)
+                } else {
+                    onError?.invoke("TX characteristic not found!")
                 }
-            }else{
-                onError?.invoke("Service failed with the status: $status")
             }
         }
 
@@ -179,9 +160,9 @@ class BleHelper(private val context: Context) {
             super.onCharacteristicWrite(gatt, characteristic, status)
 
             if (status == BluetoothGatt.GATT_SUCCESS){
-                onDebug?.invoke("Data sent Successfully!")
+                Log.d(TAG,"Data sent Successfully!")
             }else{
-                onError?.invoke("Error sending data!")
+                Log.d(TAG, "Error sending data!")
             }
         }
     }
@@ -229,7 +210,7 @@ class BleHelper(private val context: Context) {
         if (!checkPermission(Manifest.permission.BLUETOOTH_CONNECT)) return
 
         bleGatt = device.connectGatt(context, false, gattCallback)
-        onDebug?.invoke("Connected to device: ${device.name} successfully!")
+        Log.d(TAG, "Connected to device: ${device.name} successfully!")
     }
 
     fun disconnect(){

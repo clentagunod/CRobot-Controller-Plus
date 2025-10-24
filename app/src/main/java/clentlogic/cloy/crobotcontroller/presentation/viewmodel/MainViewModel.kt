@@ -63,6 +63,8 @@ class MainViewModel @Inject constructor(
 
     init {
         loadCmd()
+
+
     }
 
 
