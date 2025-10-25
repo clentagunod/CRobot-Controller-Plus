@@ -18,10 +18,12 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,6 +31,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -46,26 +49,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import clentlogic.cloy.crobotcontroller.R
 import clentlogic.cloy.crobotcontroller.data.communication.ble.BleHelper
 import clentlogic.cloy.crobotcontroller.data.communication.ble.BlePermissionHandler
 import clentlogic.cloy.crobotcontroller.domain.model.BleConnectionState
 import clentlogic.cloy.crobotcontroller.domain.model.BluetoothState
+import clentlogic.cloy.crobotcontroller.domain.model.ScanningState
 import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
 import clentlogic.cloy.crobotcontroller.presentation.model.LayoutModel
-import clentlogic.cloy.crobotcontroller.presentation.model.ScreenSize
+import clentlogic.cloy.crobotcontroller.presentation.model.ScreenSizeModel
 import clentlogic.cloy.crobotcontroller.presentation.ui.components.EnableBluetoothAlertDialog
-import clentlogic.cloy.crobotcontroller.presentation.ui.components.ScanningLoadingScreen
 import clentlogic.cloy.crobotcontroller.presentation.ui.components.ToggleSystemBars
 import clentlogic.cloy.crobotcontroller.presentation.ui.navigation.AppNavHost
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.CRobotControllerTheme
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.DeepTeal
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.LightPink
-import clentlogic.cloy.crobotcontroller.presentation.viewmodel.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -81,6 +81,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         blePermissionHandler = BlePermissionHandler(this, bleHelper)
+//        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
 
         setContent {
             CRobotControllerTheme {
@@ -103,54 +104,64 @@ class MainActivity : ComponentActivity() {
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
 fun MainCompose(
+    viewModel: MainViewContract,
     blePermissionHandler: BlePermissionHandler,
-    viewModel: MainViewContract = hiltViewModel<MainViewModel>()
+    onOpenDevice:(Map.Entry<String, BluetoothDevice>) -> Unit
 ) {
 
     val bluetoothState by viewModel.bluetoothState.collectAsState()
     val connectionState by viewModel.connectionState.collectAsState()
+    val scanningState by viewModel.scanningState.collectAsState()
 
     ToggleSystemBars()
 
     val configuration = LocalConfiguration.current
 
     val screenSize = remember(configuration) {
-        ScreenSize(
+        ScreenSizeModel(
             configuration.screenWidthDp.dp,
-            configuration.screenHeightDp.dp
+            configuration.screenHeightDp.dp,
         )
     }
 
-    var deviceName by rememberSaveable(bluetoothState) { mutableStateOf( if (bluetoothState == BluetoothState.BluetoothDisabled) "BT disabled" else "No Device" )}
+    var deviceName by rememberSaveable(bluetoothState) {
+        mutableStateOf(if (bluetoothState == BluetoothState.BluetoothDisabled) "BT disabled" else "None")}
+
+
 
     MainContent(
         screenSize,
         viewModel,
         bluetoothState,
         connectionState,
+        scanningState,
         blePermissionHandler,
         deviceName,
-         { deviceName = it }
+        { deviceName = it },
+        onOpenDevice,
     )
 
 }
 
 @Composable
 fun MainContent(
-    screenSize: ScreenSize,
+    screenSize: ScreenSizeModel,
     viewModel: MainViewContract,
     bluetoothState: BluetoothState,
     connectionState: BleConnectionState,
+    scanningState: ScanningState,
     blePermissionHandler: BlePermissionHandler,
     deviceName: String,
-    onDeviceNameChange: (String) -> Unit
+    onDeviceNameChange: (String) -> Unit,
+    onOpenDevice: (Map.Entry<String, BluetoothDevice>) -> Unit
 ) {
 
     Column {
         //TopView
-        TopView(
+        TopStatusView(
             screenSize,
-            connectionState
+            scanningState,
+            connectionState,
         )
 
         //DeviceView (middle)
@@ -158,18 +169,20 @@ fun MainContent(
             screenSize,
             deviceName,
 
-        )
+            )
         //
         AvailableDevicesView(
             screenSize,
             viewModel,
             bluetoothState,
+            scanningState,
             blePermissionHandler,
             connectionState,
             deviceName,
-            onDeviceNameChange
+            onDeviceNameChange,
+            onOpenDevice,
 
-        )
+            )
 
 
     }
@@ -177,13 +190,26 @@ fun MainContent(
 }
 
 @Composable
-fun TopView(
-    screenSize: ScreenSize,
+fun TopStatusView(
+    screenSize: ScreenSizeModel,
+    scanningState: ScanningState,
     connectionState: BleConnectionState
 
 ) {
 
+
     var connState by rememberSaveable { mutableStateOf("Disconnected") }
+    val textColor by animateColorAsState(
+        targetValue = when (connState) {
+            "Connected" -> Color.Green
+            "Disconnected", "Error" -> Color.Red
+            "Scanning" -> Color.White.copy(alpha = 0.85f)
+            else -> Color.White
+        },
+        label = "Text Color"
+
+    )
+
 
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -199,17 +225,24 @@ fun TopView(
         LayoutModel(h, padding = padding, imgSize = imgSize)
     }
 
-    LaunchedEffect(connectionState) {
-        connState = when (connectionState){
-            BleConnectionState.Connecting -> "Connecting"
-            BleConnectionState.Connected -> "Connected"
-            BleConnectionState.Disconnected -> "Disconnected"
-            is BleConnectionState.Error -> "Error"
-            BleConnectionState.Scanning -> "Scanning"
-            BleConnectionState.TimeOut -> "Time Out"
+    LaunchedEffect(connectionState, scanningState) {
 
+        println("Scanning State: $scanningState and Connection: $connectionState")
+        connState =  when (scanningState){
+            ScanningState.Scanning -> "Scanning"
+            ScanningState.ScanningFinished -> {
+            when (connectionState) {
+                BleConnectionState.Connected -> "Connected"
+                BleConnectionState.Connecting -> "Connecting"
+                BleConnectionState.Disconnected -> "Disconnected"
+                is BleConnectionState.Error -> "Error"
+                }
+            }
+            is ScanningState.ErrorScanning -> TODO()
         }
+
     }
+
 
 
     Row(
@@ -226,7 +259,7 @@ fun TopView(
 
             Text(
                 connState,
-                color = Color.Green,
+                color = textColor,
                 style = MaterialTheme.typography.displayMedium
             )
 
@@ -259,10 +292,10 @@ fun TopView(
 
 @Composable
 fun DeviceView(
-    screenSize: ScreenSize,
+    screenSize: ScreenSizeModel,
     deviceName: String,
 
-) {
+    ) {
 
     val layout = remember(screenSize) {
         val screenSizeH = screenSize.h * 0.40f
@@ -288,7 +321,7 @@ fun DeviceView(
         )
 
         Text(
-            "Device",
+            "Robot",
             color = Color.White,
             style = MaterialTheme.typography.labelSmall,
             modifier = Modifier.alpha(layout.alpha)
@@ -299,15 +332,23 @@ fun DeviceView(
 
 @Composable
 fun AvailableDevicesView(
-    screenSize: ScreenSize,
+    screenSize: ScreenSizeModel,
     viewModel: MainViewContract,
     bluetoothState: BluetoothState,
+    scanningState: ScanningState,
     blePermissionHandler: BlePermissionHandler,
     connectionState: BleConnectionState,
     deviceName: String,
-    onDeviceNameChange: (String) -> Unit
+    onDeviceNameChange: (String) -> Unit,
+    onOpenDevice: (Map.Entry<String, BluetoothDevice>) -> Unit
 ) {
     val devices by viewModel.device.collectAsState()
+    val coroutineScope = rememberCoroutineScope()
+
+    var isLoading by remember { mutableStateOf(false) }
+
+    var devicesInfo by rememberSaveable(devices) { mutableStateOf(
+        if (devices.isEmpty()) "No Robots Found: " else "Found Robots: ")}
 
     val layout = remember(screenSize) {
         val screenSizeH = screenSize.h * 0.35f
@@ -321,6 +362,29 @@ fun AvailableDevicesView(
     }
 
 
+    var enableAlertDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(scanningState) {
+        isLoading = scanningState == ScanningState.Scanning
+    }
+
+    EnableBluetoothAlertDialog(
+        enableAlertDialog,
+        onDismiss = {
+            println("Dismissed")
+            enableAlertDialog = false
+
+        },
+        onConfirm = {
+            println("Confirmed")
+            enableAlertDialog = false
+            blePermissionHandler.enableBluetooth()
+
+        }
+
+    )
+
+
     Column(
         modifier = Modifier
             .background(Color.White)
@@ -328,25 +392,66 @@ fun AvailableDevicesView(
             .height(layout.screenSizeH)
             .padding(layout.padding)
     ) {
-        Text(
-            "Devices Found:",
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(bottom = layout.padding)
-        )
+        Row {
+            Text(
+                devicesInfo,
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(bottom = layout.padding)
+            )
+
+            Spacer(Modifier.width(layout.padding))
+
+            when {
+                isLoading -> {
+                    CircularProgressIndicator(
+                        color = DeepTeal,
+                        strokeWidth = 3.dp,
+                        modifier = Modifier.size(layout.imgSize * 0.90f)
+                    )
+
+                }
+                else -> {
+                    Image(
+                        painterResource(R.drawable.retry),
+                        contentDescription = null,
+                        modifier = Modifier.size(layout.imgSize * 0.90f).clickable {
+                            coroutineScope.launch {
+                                if (bluetoothState == BluetoothState.BluetoothDisabled) {
+                                    enableAlertDialog = true
+                                } else {
+                                    viewModel.startScanning(3000L)
+                                }
+
+
+                            }
+                        }
+                    )
+
+                }
+
+            }
+
+
+
+        }
+
 
         DeviceListView(
             layout,
             devices,
             viewModel,
             connectionState,
+            coroutineScope,
             deviceName,
-            onDeviceNameChange
+            onDeviceNameChange,
+            onOpenDevice,
 
-        )
+            )
 
     }
 
     ScanButton(
+        screenSize,
         layout,
         bluetoothState,
         connectionState,
@@ -358,17 +463,17 @@ fun AvailableDevicesView(
 }
 
 
-
 @Composable
 fun DeviceListView(
     layout: LayoutModel,
     devices: Map<String, BluetoothDevice>,
     viewModel: MainViewContract,
     connectionState: BleConnectionState,
+    coroutineScope: CoroutineScope,
     deviceName: String,
-    onDeviceNameChange: (String) -> Unit
+    onDeviceNameChange: (String) -> Unit,
+    onOpenDevice: (Map.Entry<String, BluetoothDevice>) -> Unit
 ) {
-    val coroutineScope = rememberCoroutineScope()
 
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(layout.padding),
@@ -378,6 +483,7 @@ fun DeviceListView(
             devices.entries.toList(),
             key = { it.key }
         ) { device ->
+
             DeviceListItem(
                 device = device,
                 layout = layout,
@@ -386,6 +492,7 @@ fun DeviceListView(
                 connectionState = connectionState,
                 deviceName = deviceName,
                 onDeviceNameChange = onDeviceNameChange,
+                onOpenDevice = onOpenDevice,
             )
         }
     }
@@ -400,6 +507,7 @@ fun DeviceListItem(
     connectionState: BleConnectionState,
     deviceName: String,
     onDeviceNameChange: (String) -> Unit,
+    onOpenDevice: (Map.Entry<String, BluetoothDevice>) -> Unit
 ) {
 
     val isConnected = remember(connectionState, deviceName, device.key) {
@@ -418,6 +526,7 @@ fun DeviceListItem(
     val shape = remember { RoundedCornerShape(layout.borderRadius) }
 
     LaunchedEffect(connectionState) {
+        println(connectionState)
         when (connectionState) {
             BleConnectionState.Connected -> {
                 if (deviceName == device.key) {
@@ -425,16 +534,16 @@ fun DeviceListItem(
                     Log.d("DeviceListItem", "Device connected: ${device.key}")
                 }
             }
+
             BleConnectionState.Disconnected -> {
                 isLoading = false
 
             }
+
             is BleConnectionState.Error -> {
                 isLoading = false
             }
-            BleConnectionState.TimeOut -> {
-                isLoading = false
-            }
+
             else -> {}
         }
     }
@@ -463,12 +572,17 @@ fun DeviceListItem(
 
         when {
             isConnected -> {
-                Text(
-                    "Connected",
-                    color = color,
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.alpha(layout.alpha)
-                )
+                TextButton(onClick = {
+                    onOpenDevice(device)
+                }) {
+                    Text(
+                        "Open",
+                        color = color,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.alpha(layout.alpha)
+                    )
+                }
+
             }
 
             isLoading -> {
@@ -515,39 +629,13 @@ fun DeviceListItem(
 
 @Composable
 fun ScanButton(
+    screenSize: ScreenSizeModel,
     layout: LayoutModel,
     bluetoothState: BluetoothState,
     connectionState: BleConnectionState,
     blePermissionHandler: BlePermissionHandler,
     viewModel: MainViewContract
 ) {
-
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.80f else 1f,
-        label = "Scan Button"
-    )
-
-    var enableAlertDialog by remember { mutableStateOf(false)}
-
-    EnableBluetoothAlertDialog(
-        enableAlertDialog,
-        onDismiss = {
-            println("Dismissed")
-            enableAlertDialog = false
-
-        },
-        onConfirm = {
-            println("Confirmed")
-            enableAlertDialog = false
-            blePermissionHandler.enableBluetooth()
-
-        }
-
-    )
-
-    ScanningLoadingScreen(connectionState == BleConnectionState.Scanning)
 
     Row(
         horizontalArrangement = Arrangement.Center,
@@ -557,36 +645,8 @@ fun ScanButton(
             .height(layout.screenSizeH + 5.dp)
             .padding(layout.padding)
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Image(
-                painterResource(R.drawable.scan_svgrepo_com),
-                contentDescription = null,
-                modifier = Modifier
-                    .scale(scale)
-                    .clickable(
-                        interactionSource = interactionSource,
-                        indication = null,
-                    ) {
-                        println("Scan button is clicked!")
 
-                        if (bluetoothState == BluetoothState.BluetoothDisabled){
-                            enableAlertDialog = true
-                        }else{
-                            viewModel.startScanning(2000L)
-                        }
-
-
-                    }
-            )
-            Text(
-                "Scan",
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.alpha(layout.alpha)
-            )
-            Button(onClick = { viewModel.disconnectDevice() }) { Text("Disconnect") }
-        }
+        Button(onClick = { viewModel.disconnectDevice() }) { Text("Disconnect") }
         Button(onClick = { viewModel.sendDataToBleDevice("yeahh") }) { Text("Send") }
 
     }

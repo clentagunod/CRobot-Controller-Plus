@@ -4,7 +4,5 @@ sealed class BleConnectionState {
     object Connecting: BleConnectionState()
     object Connected: BleConnectionState()
     object Disconnected: BleConnectionState()
-    object Scanning: BleConnectionState()
-    object TimeOut: BleConnectionState()
     data class Error(val message: String): BleConnectionState()
 }

@@ -4,11 +4,9 @@ import android.bluetooth.BluetoothDevice
 import clentlogic.cloy.crobotcontroller.data.communication.ble.BleHelper
 import clentlogic.cloy.crobotcontroller.domain.model.BleConnectionState
 import clentlogic.cloy.crobotcontroller.domain.model.BluetoothState
+import clentlogic.cloy.crobotcontroller.domain.model.ScanningState
 import clentlogic.cloy.crobotcontroller.domain.repository.BleRepository
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import javax.inject.Inject
 
 class BleRepositoryImpl @Inject constructor(
@@ -23,6 +21,9 @@ class BleRepositoryImpl @Inject constructor(
 
     private val _bluetoothState = MutableStateFlow(if (bleHelper.isBluetoothEnabled()) BluetoothState.BluetoothEnabled else BluetoothState.BluetoothDisabled )
     override val bluetoothState: MutableStateFlow<BluetoothState> = _bluetoothState
+
+    private val _scanningState = MutableStateFlow<ScanningState>(ScanningState.ScanningFinished)
+    override val scanningState: MutableStateFlow<ScanningState> = _scanningState
 
 
 
@@ -45,13 +46,16 @@ class BleRepositoryImpl @Inject constructor(
             _connectionState.value = BleConnectionState.Disconnected
         }
 
-        bleHelper.onTimeOut = {
-            _connectionState.value = BleConnectionState.TimeOut
+
+        // Scanning State
+        bleHelper.onStoppedScanning = {
+            _scanningState.value = ScanningState.ScanningFinished
         }
 
         bleHelper.onScanning = {
-            _connectionState.value = BleConnectionState.Scanning
+            _scanningState.value = ScanningState.Scanning
         }
+
 
         //Bluetooth Status
 
@@ -69,6 +73,7 @@ class BleRepositoryImpl @Inject constructor(
 
 
     override fun startScan(wait: Long) = bleHelper.startScan(wait)
+    override fun stopScanning() = bleHelper.stopScan()
     override fun connectBleDevice(device: BluetoothDevice) = bleHelper.connect(device)
     override fun disconnectBleDevice() = bleHelper.disconnect()
     override fun sendDataToBle(data: String) = bleHelper.sendData(data)

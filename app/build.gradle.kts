@@ -74,4 +74,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
 
     implementation("androidx.navigation:navigation-compose:2.8.3")
+
+    implementation("com.valentinilk.shimmer:compose-shimmer:1.3.1")
+
 }

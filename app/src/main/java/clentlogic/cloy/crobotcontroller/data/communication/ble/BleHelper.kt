@@ -52,12 +52,12 @@ class BleHelper(private val context: Context) {
     var onDataReceived: ((String) -> Unit)? = null
     var onError: ((String) -> Unit)? = null
     var onDebug: ((String) -> Unit)? = null
-    var onTimeOut: (() -> Unit )? = null
+    var onStoppedScanning: (() -> Unit )? = null
     var onScanning: (() -> Unit)? = null
     var onBluetoothDisabled: (() -> Unit)? = null
     var onBluetoothEnabled: (() -> Unit)? = null
 
-    val foundConnectedDevice = mutableListOf<BluetoothDevice>()
+    private val foundConnectedDevice = mutableListOf<BluetoothDevice>()
 
 
     private val scanCallback = object: ScanCallback(){
@@ -259,7 +259,6 @@ class BleHelper(private val context: Context) {
         }
 
         onScanning?.invoke()
-
         val scanner = bleAdapter?.bluetoothLeScanner
         scanner?.let {
             onDebug?.invoke("Scanning..")
@@ -270,10 +269,10 @@ class BleHelper(private val context: Context) {
 
         job?.cancel()
 
-        job = CoroutineScope(Dispatchers.Main).launch {
+        job = CoroutineScope(Dispatchers.IO).launch {
             delay(wait)
             stopScan()
-            onTimeOut?.invoke()
+            onStoppedScanning?.invoke()
         }
 
     }
@@ -282,10 +281,11 @@ class BleHelper(private val context: Context) {
         if (!isScanning) return
         if (!checkPermission(Manifest.permission.BLUETOOTH_SCAN)) return
 
-        isScanning = false
         bleAdapter?.bluetoothLeScanner?.stopScan(scanCallback)
+        isScanning = false
         job?.cancel()
         job = null
+
 
         if (foundDevices.isNotEmpty()){
             onDeviceFound?.invoke(foundDevices.toMap())
