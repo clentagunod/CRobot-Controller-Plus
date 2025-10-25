@@ -11,10 +11,10 @@ import clentlogic.cloy.crobotcontroller.domain.repository.CmdRepository
 import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.ConnectBleDevice
 import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.DisconnectBleDevice
 import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.SendDataToBle
-import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.callback.GetDeviceDataFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.dataflow.GetDeviceDataFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.StartScan
-import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.callback.GetBluetoothStateFlow
-import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.callback.GetConnectionStateFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.dataflow.GetBluetoothStateFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.dataflow.GetConnectionStateFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.AddCmd
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.DeleteCmd
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.GetAllCmd

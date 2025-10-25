@@ -1,11 +1,10 @@
 package clentlogic.cloy.crobotcontroller.presentation.contracts
 
 import android.bluetooth.BluetoothDevice
-import androidx.compose.runtime.State
 import clentlogic.cloy.crobotcontroller.domain.model.BleConnectionState
 import clentlogic.cloy.crobotcontroller.domain.model.BluetoothState
 import clentlogic.cloy.crobotcontroller.domain.model.CmdModel
-import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 interface MainViewContract {
@@ -13,7 +12,6 @@ interface MainViewContract {
     val cmd: StateFlow<List<CmdModel>>
     val connectionState: StateFlow<BleConnectionState>
     val device: StateFlow<Map<String, BluetoothDevice>>
-
     val bluetoothState: StateFlow<BluetoothState>
 
     fun startScanning(wait: Long)
@@ -23,8 +21,6 @@ interface MainViewContract {
     fun sendDataToBleDevice(data: String)
     fun addCommand(cmdModel: CmdModel)
     fun deleteCommand(cmdModel: CmdModel)
-
-
 
 
 }

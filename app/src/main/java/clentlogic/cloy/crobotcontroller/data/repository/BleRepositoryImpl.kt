@@ -25,10 +25,15 @@ class BleRepositoryImpl @Inject constructor(
     override val bluetoothState: MutableStateFlow<BluetoothState> = _bluetoothState
 
 
+
     init {
 
         bleHelper.onDeviceFound = {
             _deviceDataFlow.value = it
+        }
+
+        bleHelper.onConnecting = {
+            _connectionState.value = BleConnectionState.Connecting
         }
 
         // BLe Connection Status
@@ -58,6 +63,7 @@ class BleRepositoryImpl @Inject constructor(
         bleHelper.onBluetoothDisabled = {
             _bluetoothState.value = BluetoothState.BluetoothDisabled
         }
+
     }
 
 

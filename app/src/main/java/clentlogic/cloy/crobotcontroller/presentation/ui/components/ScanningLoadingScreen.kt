@@ -34,7 +34,7 @@ fun ScanningLoadingScreen(show: Boolean) {
                     .background(Color.Black.copy(alpha = 0.5f))
                     .clickable(false) {}
             ) {
-                Row() {
+                Row {
                     Text(
                         "Scanning devices..",
                         color = Color.White,

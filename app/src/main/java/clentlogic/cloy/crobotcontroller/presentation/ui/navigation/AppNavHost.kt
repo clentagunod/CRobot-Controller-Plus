@@ -20,6 +20,7 @@ fun AppNavHost(
     val prefs = activity.getSharedPreferences("app_prefs", MODE_PRIVATE)
     val permissionGranted = prefs.getBoolean("permissions_ok", false)
 
+
     NavHost(
         navController = navController,
         startDestination = if (permissionGranted) "main" else "check_permission"

@@ -2,7 +2,6 @@ package clentlogic.cloy.crobotcontroller.presentation.ui.activity
 
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
-import android.content.Context.MODE_PRIVATE
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -17,25 +16,19 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -53,12 +46,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Popup
-import androidx.core.content.edit
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import clentlogic.cloy.crobotcontroller.R
 import clentlogic.cloy.crobotcontroller.data.communication.ble.BleHelper
 import clentlogic.cloy.crobotcontroller.data.communication.ble.BlePermissionHandler
@@ -71,7 +59,6 @@ import clentlogic.cloy.crobotcontroller.presentation.ui.components.EnableBluetoo
 import clentlogic.cloy.crobotcontroller.presentation.ui.components.ScanningLoadingScreen
 import clentlogic.cloy.crobotcontroller.presentation.ui.components.ToggleSystemBars
 import clentlogic.cloy.crobotcontroller.presentation.ui.navigation.AppNavHost
-import clentlogic.cloy.crobotcontroller.presentation.ui.screen.CheckPermissionCompose
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.CRobotControllerTheme
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.DeepTeal
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.LightPink
@@ -144,7 +131,7 @@ fun MainCompose(
         blePermissionHandler,
         deviceName,
          { deviceName = it }
-        )
+    )
 
 }
 
@@ -169,7 +156,7 @@ fun MainContent(
         //DeviceView (middle)
         DeviceView(
             screenSize,
-            deviceName
+            deviceName,
 
         )
         //
@@ -179,13 +166,13 @@ fun MainContent(
             bluetoothState,
             blePermissionHandler,
             connectionState,
+            deviceName,
             onDeviceNameChange
 
         )
 
 
     }
-
 
 }
 
@@ -196,6 +183,7 @@ fun TopView(
 
 ) {
 
+    var connState by rememberSaveable { mutableStateOf("Disconnected") }
 
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -209,7 +197,18 @@ fun TopView(
         val padding = (screenSize.h + screenSize.w) * 0.01f
         val imgSize = (screenSize.h + screenSize.w) * 0.03f
         LayoutModel(h, padding = padding, imgSize = imgSize)
+    }
 
+    LaunchedEffect(connectionState) {
+        connState = when (connectionState){
+            BleConnectionState.Connecting -> "Connecting"
+            BleConnectionState.Connected -> "Connected"
+            BleConnectionState.Disconnected -> "Disconnected"
+            is BleConnectionState.Error -> "Error"
+            BleConnectionState.Scanning -> "Scanning"
+            BleConnectionState.TimeOut -> "Time Out"
+
+        }
     }
 
 
@@ -224,20 +223,12 @@ fun TopView(
     ) {
 
         Column {
-            if (connectionState == BleConnectionState.Connected) {
-                Text(
-                    "Connected",
-                    color = Color.Green,
-                    style = MaterialTheme.typography.displayMedium
-                )
-            } else {
-                Text(
-                    "Disconnected",
-                    color = Color.Red,
-                    style = MaterialTheme.typography.displayMedium
-                )
 
-            }
+            Text(
+                connState,
+                color = Color.Green,
+                style = MaterialTheme.typography.displayMedium
+            )
 
             Text(
                 "Status",
@@ -269,16 +260,14 @@ fun TopView(
 @Composable
 fun DeviceView(
     screenSize: ScreenSize,
-    deviceName: String
+    deviceName: String,
 
 ) {
-
 
     val layout = remember(screenSize) {
         val screenSizeH = screenSize.h * 0.40f
         val padding = (screenSize.h + screenSize.w) * 0.01f
         LayoutModel(screenSizeH = screenSizeH, padding = padding)
-
     }
 
 
@@ -315,6 +304,7 @@ fun AvailableDevicesView(
     bluetoothState: BluetoothState,
     blePermissionHandler: BlePermissionHandler,
     connectionState: BleConnectionState,
+    deviceName: String,
     onDeviceNameChange: (String) -> Unit
 ) {
     val devices by viewModel.device.collectAsState()
@@ -349,6 +339,7 @@ fun AvailableDevicesView(
             devices,
             viewModel,
             connectionState,
+            deviceName,
             onDeviceNameChange
 
         )
@@ -365,6 +356,162 @@ fun AvailableDevicesView(
 
 
 }
+
+
+
+@Composable
+fun DeviceListView(
+    layout: LayoutModel,
+    devices: Map<String, BluetoothDevice>,
+    viewModel: MainViewContract,
+    connectionState: BleConnectionState,
+    deviceName: String,
+    onDeviceNameChange: (String) -> Unit
+) {
+    val coroutineScope = rememberCoroutineScope()
+
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(layout.padding),
+        userScrollEnabled = true
+    ) {
+        items(
+            devices.entries.toList(),
+            key = { it.key }
+        ) { device ->
+            DeviceListItem(
+                device = device,
+                layout = layout,
+                coroutineScope = coroutineScope,
+                viewModel = viewModel,
+                connectionState = connectionState,
+                deviceName = deviceName,
+                onDeviceNameChange = onDeviceNameChange,
+            )
+        }
+    }
+}
+
+@Composable
+fun DeviceListItem(
+    device: Map.Entry<String, BluetoothDevice>,
+    layout: LayoutModel,
+    coroutineScope: CoroutineScope,
+    viewModel: MainViewContract,
+    connectionState: BleConnectionState,
+    deviceName: String,
+    onDeviceNameChange: (String) -> Unit,
+) {
+
+    val isConnected = remember(connectionState, deviceName, device.key) {
+        connectionState == BleConnectionState.Connected && deviceName == device.key
+    }
+
+    var isLoading by remember { mutableStateOf(false) }
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val color by animateColorAsState(
+        targetValue = if (isPressed) DeepTeal else Color.Black,
+        animationSpec = tween(durationMillis = 100),
+        label = "Connect Button Text"
+    )
+
+    val shape = remember { RoundedCornerShape(layout.borderRadius) }
+
+    LaunchedEffect(connectionState) {
+        when (connectionState) {
+            BleConnectionState.Connected -> {
+                if (deviceName == device.key) {
+                    isLoading = false
+                    Log.d("DeviceListItem", "Device connected: ${device.key}")
+                }
+            }
+            BleConnectionState.Disconnected -> {
+                isLoading = false
+
+            }
+            is BleConnectionState.Error -> {
+                isLoading = false
+            }
+            BleConnectionState.TimeOut -> {
+                isLoading = false
+            }
+            else -> {}
+        }
+    }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(layout.screenSizeH * 0.25f)
+            .background(LightPink, shape = shape)
+            .padding(layout.padding)
+    ) {
+        Column {
+            Text(
+                device.key,
+                color = DeepTeal,
+                style = MaterialTheme.typography.headlineSmall
+            )
+            Text(
+                "${device.value}",
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.alpha(layout.alpha)
+            )
+        }
+
+        when {
+            isConnected -> {
+                Text(
+                    "Connected",
+                    color = color,
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.alpha(layout.alpha)
+                )
+            }
+
+            isLoading -> {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(layout.imgSize),
+                    color = Color.White,
+                    strokeWidth = 3.dp
+                )
+            }
+
+            else -> {
+                Text(
+                    "Connect",
+                    color = color,
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier
+                        .alpha(layout.alpha)
+                        .clickable(
+                            interactionSource = interactionSource,
+                            indication = null
+                        ) {
+                            isLoading = true
+                            onDeviceNameChange(device.key)
+
+                            coroutineScope.launch {
+                                try {
+                                    if (connectionState == BleConnectionState.Connected) {
+                                        viewModel.disconnectDevice()
+                                    }
+                                    viewModel.connectToDevice(device.value)
+                                } catch (e: Exception) {
+                                    Log.e("DeviceListItem", "Connection failed", e)
+                                    isLoading = false
+                                    onDeviceNameChange("No Device")
+                                }
+                            }
+                        }
+                )
+            }
+        }
+    }
+}
+
 
 @Composable
 fun ScanButton(
@@ -445,155 +592,4 @@ fun ScanButton(
     }
 
 }
-
-
-@Composable
-fun DeviceListView(
-    layout: LayoutModel,
-    devices: Map<String, BluetoothDevice>,
-    viewModel: MainViewContract,
-    connectionState: BleConnectionState,
-    onDeviceNameChange: (String) -> Unit
-) {
-
-
-    val coroutineScope = rememberCoroutineScope()
-
-
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(layout.padding),
-        userScrollEnabled = true
-    ) {
-        items(
-            devices.entries.toList()
-        ) { device ->
-
-            DeviceListItems(
-                device,
-                layout,
-                coroutineScope,
-                viewModel,
-                connectionState,
-                onDeviceNameChange
-            )
-
-        }
-
-    }
-}
-
-
-@Composable
-fun DeviceListItems(
-    device: Map.Entry<String, BluetoothDevice>,
-    layout: LayoutModel,
-    coroutineScope: CoroutineScope,
-    viewModel: MainViewContract,
-    connectionState: BleConnectionState,
-    onDeviceNameChange: (String) -> Unit
-
-) {
-
-    var isConnected by rememberSaveable { mutableStateOf(false) }
-    var isLoading by rememberSaveable { mutableStateOf(false) }
-
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val color by animateColorAsState(
-        targetValue = if (isPressed) DeepTeal else Color.Black,
-        animationSpec = tween(durationMillis = 100),
-        label = "Connect Button Text"
-    )
-
-    val shape = remember { RoundedCornerShape(layout.borderRadius) }
-
-    LaunchedEffect(connectionState) {
-        if (connectionState == BleConnectionState.Disconnected) {
-            isConnected = !isConnected
-            onDeviceNameChange("No Device")
-            Log.d("Main", "Mao ni error! $connectionState")
-        }
-    }
-
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(layout.screenSizeH * 0.25f)
-            .background(LightPink, shape = shape)
-            .padding(layout.padding)
-    ) {
-
-        Column {
-            Text(
-                device.key,
-                color = DeepTeal,
-                style = MaterialTheme.typography.headlineSmall
-            )
-            Text(
-                "${device.value}",
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.alpha(layout.alpha)
-            )
-        }
-
-        when {
-            isConnected -> {
-
-                Text(
-                    "Connected",
-                    color = color,
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier
-                        .alpha(layout.alpha)
-                )
-
-
-
-            }
-
-            isLoading -> {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(layout.imgSize),
-                    color = Color.White,
-                    strokeWidth = 3.dp
-                )
-
-            }
-
-            else -> {
-                Text(
-                    "Connect",
-                    color = color,
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier
-                        .alpha(layout.alpha)
-                        .clickable(
-                            interactionSource = interactionSource,
-                            indication = null
-                        ) {
-                            isLoading = true
-
-                            coroutineScope.launch {
-                                viewModel.connectToDevice(device.value)
-                                delay(1000L)
-                                isLoading = false
-                                onDeviceNameChange(device.key)
-                                isConnected = connectionState != BleConnectionState.Connected
-
-                            }
-                        }
-                )
-
-            }
-
-        }
-
-
-    }
-}
-
-
 

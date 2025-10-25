@@ -46,6 +46,8 @@ class BleHelper(private val context: Context) {
 
     var onDeviceFound: ((Map<String, BluetoothDevice>) -> Unit)? = null
     var onConnected: (() -> Unit)? = null
+
+    var onConnecting: (() -> Unit)? = null
     var onDisconnected: (() -> Unit)? = null
     var onDataReceived: ((String) -> Unit)? = null
     var onError: ((String) -> Unit)? = null
@@ -55,6 +57,7 @@ class BleHelper(private val context: Context) {
     var onBluetoothDisabled: (() -> Unit)? = null
     var onBluetoothEnabled: (() -> Unit)? = null
 
+    val foundConnectedDevice = mutableListOf<BluetoothDevice>()
 
 
     private val scanCallback = object: ScanCallback(){
@@ -209,15 +212,25 @@ class BleHelper(private val context: Context) {
     fun connect(device: BluetoothDevice){
         if (!checkPermission(Manifest.permission.BLUETOOTH_CONNECT)) return
 
+        onConnecting?.invoke()
+
         bleGatt = device.connectGatt(context, false, gattCallback)
         Log.d(TAG, "Connected to device: ${device.name} successfully!")
+
     }
 
     fun disconnect(){
         if (!checkPermission(Manifest.permission.BLUETOOTH_CONNECT)) return
 
-        bleGatt?.disconnect()
-        cleanUp()
+        bleGatt?.let { gatt ->
+            try {
+                gatt.disconnect()
+                Log.d(TAG, "Disconnect requested")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error during disconnect: ${e.message}")
+            }
+        }
+
     }
 
     fun sendData(data: String){
@@ -283,12 +296,18 @@ class BleHelper(private val context: Context) {
     }
 
     private fun cleanUp() {
-        txChar = null
-        bleGatt = null
-        bleGatt?.close()
-
+        try {
+            // Close GATT connection BEFORE setting to null
+            bleGatt?.close()
+            Log.d(TAG, "GATT connection closed and cleaned up")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error closing GATT: ${e.message}")
+        } finally {
+            // Now set references to null
+            txChar = null
+            bleGatt = null
+        }
     }
-
     private fun enableNotification(
         gatt: BluetoothGatt,
         characteristic: BluetoothGattCharacteristic){
