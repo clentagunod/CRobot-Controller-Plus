@@ -158,20 +158,20 @@ fun MainContent(
 
     Column {
         //TopView
-        TopStatusView(
+        TopStatus(
             screenSize,
             scanningState,
             connectionState,
         )
 
         //DeviceView (middle)
-        DeviceView(
+        RobotNameStatus(
             screenSize,
             deviceName,
 
             )
         //
-        AvailableDevicesView(
+        AvailableRobotFound(
             screenSize,
             viewModel,
             bluetoothState,
@@ -190,7 +190,7 @@ fun MainContent(
 }
 
 @Composable
-fun TopStatusView(
+fun TopStatus(
     screenSize: ScreenSizeModel,
     scanningState: ScanningState,
     connectionState: BleConnectionState
@@ -291,7 +291,7 @@ fun TopStatusView(
 }
 
 @Composable
-fun DeviceView(
+fun RobotNameStatus(
     screenSize: ScreenSizeModel,
     deviceName: String,
 
@@ -331,7 +331,7 @@ fun DeviceView(
 }
 
 @Composable
-fun AvailableDevicesView(
+fun AvailableRobotFound(
     screenSize: ScreenSizeModel,
     viewModel: MainViewContract,
     bluetoothState: BluetoothState,
@@ -436,7 +436,7 @@ fun AvailableDevicesView(
         }
 
 
-        DeviceListView(
+        RobotList(
             layout,
             devices,
             viewModel,
@@ -464,7 +464,7 @@ fun AvailableDevicesView(
 
 
 @Composable
-fun DeviceListView(
+fun RobotList(
     layout: LayoutModel,
     devices: Map<String, BluetoothDevice>,
     viewModel: MainViewContract,
@@ -484,7 +484,7 @@ fun DeviceListView(
             key = { it.key }
         ) { device ->
 
-            DeviceListItem(
+            RobotListItem(
                 device = device,
                 layout = layout,
                 coroutineScope = coroutineScope,
@@ -499,7 +499,7 @@ fun DeviceListView(
 }
 
 @Composable
-fun DeviceListItem(
+fun RobotListItem(
     device: Map.Entry<String, BluetoothDevice>,
     layout: LayoutModel,
     coroutineScope: CoroutineScope,
