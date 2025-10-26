@@ -62,6 +62,9 @@ fun AppNavHost(
                 MainCompose(
                     viewModel,
                     blePermissionHandler,
+                    onOpenSettings = {
+                        println("Settings Opened")
+                    },
                     onOpenDevice = {
                         device = it
                         navController.navigate("manage_device")

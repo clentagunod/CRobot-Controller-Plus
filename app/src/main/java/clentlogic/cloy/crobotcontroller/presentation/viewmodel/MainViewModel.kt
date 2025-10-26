@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.random.Random
 
 
 @HiltViewModel
@@ -69,7 +70,8 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             while (true){
                 startScan(3000L)
-                delay(30_000)
+                val randomDelay = Random.nextLong(10_000L, 60_000L)
+                delay(randomDelay)
             }
         }
     }

@@ -2,9 +2,11 @@ package clentlogic.cloy.crobotcontroller.presentation.ui.activity
 
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
+import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.animateColorAsState
@@ -19,10 +21,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -47,6 +53,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import clentlogic.cloy.crobotcontroller.R
@@ -81,7 +88,6 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         blePermissionHandler = BlePermissionHandler(this, bleHelper)
-//        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
 
         setContent {
             CRobotControllerTheme {
@@ -101,11 +107,13 @@ class MainActivity : ComponentActivity() {
 }
 
 
+
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
 fun MainCompose(
     viewModel: MainViewContract,
     blePermissionHandler: BlePermissionHandler,
+    onOpenSettings: () -> Unit,
     onOpenDevice:(Map.Entry<String, BluetoothDevice>) -> Unit
 ) {
 
@@ -116,6 +124,13 @@ fun MainCompose(
     ToggleSystemBars()
 
     val configuration = LocalConfiguration.current
+    val density = LocalDensity.current
+
+    val insets = WindowInsets.systemBars
+    val top = with(density) {insets.getTop(density).toDp()}
+    val bottom = with(density) { insets.getBottom(density).toDp()}
+
+
 
     val screenSize = remember(configuration) {
         ScreenSizeModel(
@@ -138,6 +153,7 @@ fun MainCompose(
         blePermissionHandler,
         deviceName,
         { deviceName = it },
+        onOpenSettings,
         onOpenDevice,
     )
 
@@ -153,6 +169,7 @@ fun MainContent(
     blePermissionHandler: BlePermissionHandler,
     deviceName: String,
     onDeviceNameChange: (String) -> Unit,
+    onOpenSettings: () -> Unit,
     onOpenDevice: (Map.Entry<String, BluetoothDevice>) -> Unit
 ) {
 
@@ -162,6 +179,7 @@ fun MainContent(
             screenSize,
             scanningState,
             connectionState,
+            onOpenSettings,
         )
 
         //DeviceView (middle)
@@ -193,7 +211,8 @@ fun MainContent(
 fun TopStatus(
     screenSize: ScreenSizeModel,
     scanningState: ScanningState,
-    connectionState: BleConnectionState
+    connectionState: BleConnectionState,
+    onOpenSettings: () -> Unit,
 
 ) {
 
@@ -226,7 +245,6 @@ fun TopStatus(
     }
 
     LaunchedEffect(connectionState, scanningState) {
-
         println("Scanning State: $scanningState and Connection: $connectionState")
         connState =  when (scanningState){
             ScanningState.Scanning -> "Scanning"
@@ -242,8 +260,6 @@ fun TopStatus(
         }
 
     }
-
-
 
     Row(
         verticalAlignment = Alignment.Bottom,
@@ -280,7 +296,7 @@ fun TopStatus(
                     interactionSource = interactionSource,
                     indication = null
                 ) {
-                    println("Settings Button Clicked!")
+                    onOpenSettings()
                 }
                 .scale(settingsImgScale)
         )
@@ -298,15 +314,31 @@ fun RobotNameStatus(
     ) {
 
     val layout = remember(screenSize) {
-        val screenSizeH = screenSize.h * 0.40f
-        val padding = (screenSize.h + screenSize.w) * 0.01f
-        LayoutModel(screenSizeH = screenSizeH, padding = padding)
+        if (screenSize.w > screenSize.h) {
+            val screenSizeH = screenSize.h * 0.30f
+            val padding = (screenSize.h + screenSize.w) * 0.01f
+            val arrangement = Arrangement.Top
+            LayoutModel(
+                screenSizeH = screenSizeH,
+                padding = padding,
+                arrangementV = arrangement
+            )
+        }else{
+            val screenSizeH = screenSize.h * 0.40f
+            val padding = (screenSize.h + screenSize.w) * 0.01f
+            LayoutModel(
+                screenSizeH = screenSizeH,
+                padding = padding
+            )
+
+        }
+
     }
 
 
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = layout.alignmentH,
+        verticalArrangement = layout.arrangementV,
         modifier = Modifier
             .background(DeepTeal)
             .fillMaxWidth()
@@ -351,14 +383,30 @@ fun AvailableRobotFound(
         if (devices.isEmpty()) "No Robots Found: " else "Found Robots: ")}
 
     val layout = remember(screenSize) {
-        val screenSizeH = screenSize.h * 0.35f
-        val imgSize = (screenSize.h + screenSize.w) * 0.02f
-        val padding = (screenSize.h + screenSize.w) * 0.01f
-        LayoutModel(
-            screenSizeH = screenSizeH,
-            padding = padding,
-            imgSize = imgSize
-        )
+        if (screenSize.w > screenSize.h){
+            val screenSizeH = screenSize.h * 0.58f
+            val imgSize = (screenSize.h + screenSize.w) * 0.02f
+            val padding = (screenSize.h + screenSize.w) * 0.01f
+            val itemHeight = screenSizeH * 0.30f
+            LayoutModel(
+                screenSizeH = screenSizeH,
+                padding = padding,
+                imgSize = imgSize,
+                itemHeight = itemHeight
+            )
+        }else{
+            val screenSizeH = screenSize.h * 0.53f
+            val imgSize = (screenSize.h + screenSize.w) * 0.02f
+            val padding = (screenSize.h + screenSize.w) * 0.01f
+            val itemHeight = screenSizeH * 0.20f
+            LayoutModel(
+                screenSizeH = screenSizeH,
+                padding = padding,
+                imgSize = imgSize,
+                itemHeight = itemHeight
+            )
+        }
+
     }
 
 
@@ -391,6 +439,8 @@ fun AvailableRobotFound(
             .fillMaxWidth()
             .height(layout.screenSizeH)
             .padding(layout.padding)
+            .consumeWindowInsets(WindowInsets.systemBars.asPaddingValues())
+
     ) {
         Row {
             Text(
@@ -421,8 +471,6 @@ fun AvailableRobotFound(
                                 } else {
                                     viewModel.startScanning(3000L)
                                 }
-
-
                             }
                         }
                     )
@@ -449,16 +497,6 @@ fun AvailableRobotFound(
             )
 
     }
-
-    ScanButton(
-        screenSize,
-        layout,
-        bluetoothState,
-        connectionState,
-        blePermissionHandler,
-        viewModel
-    )
-
 
 }
 
@@ -514,6 +552,8 @@ fun RobotListItem(
         connectionState == BleConnectionState.Connected && deviceName == device.key
     }
 
+
+
     var isLoading by remember { mutableStateOf(false) }
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -553,7 +593,7 @@ fun RobotListItem(
         horizontalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier
             .fillMaxWidth()
-            .height(layout.screenSizeH * 0.25f)
+            .height(layout.itemHeight)
             .background(LightPink, shape = shape)
             .padding(layout.padding)
     ) {
@@ -624,32 +664,5 @@ fun RobotListItem(
             }
         }
     }
-}
-
-
-@Composable
-fun ScanButton(
-    screenSize: ScreenSizeModel,
-    layout: LayoutModel,
-    bluetoothState: BluetoothState,
-    connectionState: BleConnectionState,
-    blePermissionHandler: BlePermissionHandler,
-    viewModel: MainViewContract
-) {
-
-    Row(
-        horizontalArrangement = Arrangement.Center,
-        modifier = Modifier
-            .background(Color.White)
-            .fillMaxWidth()
-            .height(layout.screenSizeH + 5.dp)
-            .padding(layout.padding)
-    ) {
-
-        Button(onClick = { viewModel.disconnectDevice() }) { Text("Disconnect") }
-        Button(onClick = { viewModel.sendDataToBleDevice("yeahh") }) { Text("Send") }
-
-    }
-
 }
 
