@@ -4,10 +4,7 @@ import android.bluetooth.BluetoothDevice
 import android.content.Context.MODE_PRIVATE
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.core.content.edit
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
@@ -19,6 +16,7 @@ import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
 import clentlogic.cloy.crobotcontroller.presentation.ui.activity.MainCompose
 import clentlogic.cloy.crobotcontroller.presentation.ui.screen.CheckPermissionCompose
 import clentlogic.cloy.crobotcontroller.presentation.ui.screen.ManageDeviceScreen
+import clentlogic.cloy.crobotcontroller.presentation.ui.util.LandscapeCompose
 import clentlogic.cloy.crobotcontroller.presentation.viewmodel.MainViewModel
 
 @Composable
@@ -30,7 +28,7 @@ fun AppNavHost(
     val prefs = activity.getSharedPreferences("app_prefs", MODE_PRIVATE)
     val permissionGranted = prefs.getBoolean("permissions_ok", false)
 
-    lateinit var device: (Map.Entry<String, BluetoothDevice>)
+    var device: (Map.Entry<String, BluetoothDevice>)? = null
 
 
     NavHost(
@@ -78,10 +76,14 @@ fun AppNavHost(
                 }
 
                 val viewModel: MainViewContract = hiltViewModel<MainViewModel>(parentEntry)
-                ManageDeviceScreen(
-                    device,
-                    viewModel
-                )
+                LandscapeCompose {
+//                    ManageDeviceScreen(
+//                        device,
+//                        viewModel
+//                    )
+
+                }
+
             }
 
 

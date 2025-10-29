@@ -14,6 +14,7 @@ data class LayoutModel(
     val alpha: Float = 0.6f,
     val borderRadius: Dp = 3.dp,
     val itemHeight: Dp = 0.dp,
+    val toggleWindowSize: Dp = 0.dp,
     val alignmentH: Alignment.Horizontal = Alignment.CenterHorizontally,
     val alignmentV: Alignment.Vertical = Alignment.CenterVertically,
     val arrangementH: Arrangement.Horizontal = Arrangement.Center,

@@ -2,11 +2,9 @@ package clentlogic.cloy.crobotcontroller.presentation.ui.activity
 
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
-import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.animateColorAsState
@@ -33,7 +31,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -52,8 +49,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import clentlogic.cloy.crobotcontroller.R
@@ -63,14 +58,18 @@ import clentlogic.cloy.crobotcontroller.domain.model.BleConnectionState
 import clentlogic.cloy.crobotcontroller.domain.model.BluetoothState
 import clentlogic.cloy.crobotcontroller.domain.model.ScanningState
 import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
+import clentlogic.cloy.crobotcontroller.presentation.fakes.models.FakeViewModel
 import clentlogic.cloy.crobotcontroller.presentation.model.LayoutModel
 import clentlogic.cloy.crobotcontroller.presentation.model.ScreenSizeModel
 import clentlogic.cloy.crobotcontroller.presentation.ui.components.EnableBluetoothAlertDialog
 import clentlogic.cloy.crobotcontroller.presentation.ui.components.ToggleSystemBars
 import clentlogic.cloy.crobotcontroller.presentation.ui.navigation.AppNavHost
+import clentlogic.cloy.crobotcontroller.presentation.ui.screen.ManageDeviceScreen
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.CRobotControllerTheme
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.DeepTeal
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.LightPink
+import clentlogic.cloy.crobotcontroller.presentation.ui.util.LandscapeCompose
+import clentlogic.cloy.crobotcontroller.presentation.ui.util.getScreenSize
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -87,13 +86,21 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+
         blePermissionHandler = BlePermissionHandler(this, bleHelper)
 
         setContent {
             CRobotControllerTheme {
-                AppNavHost(this, blePermissionHandler)
-
+//                AppNavHost(this, blePermissionHandler)
+                ToggleSystemBars()
+                LandscapeCompose {
+                    ManageDeviceScreen(
+                        mapOf("ClentRobot" to "Device").entries.first(),
+                        FakeViewModel()
+                    )
+                }
             }
+
         }
 
         bleHelper.registerBluetoothStateReceiver()
@@ -107,14 +114,13 @@ class MainActivity : ComponentActivity() {
 }
 
 
-
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
 fun MainCompose(
     viewModel: MainViewContract,
     blePermissionHandler: BlePermissionHandler,
     onOpenSettings: () -> Unit,
-    onOpenDevice:(Map.Entry<String, BluetoothDevice>) -> Unit
+    onOpenDevice: (Map.Entry<String, BluetoothDevice>) -> Unit
 ) {
 
     val bluetoothState by viewModel.bluetoothState.collectAsState()
@@ -123,25 +129,11 @@ fun MainCompose(
 
     ToggleSystemBars()
 
-    val configuration = LocalConfiguration.current
-    val density = LocalDensity.current
-
-    val insets = WindowInsets.systemBars
-    val top = with(density) {insets.getTop(density).toDp()}
-    val bottom = with(density) { insets.getBottom(density).toDp()}
-
-
-
-    val screenSize = remember(configuration) {
-        ScreenSizeModel(
-            configuration.screenWidthDp.dp,
-            configuration.screenHeightDp.dp,
-        )
-    }
+    val screenSize = getScreenSize()
 
     var deviceName by rememberSaveable(bluetoothState) {
-        mutableStateOf(if (bluetoothState == BluetoothState.BluetoothDisabled) "BT disabled" else "None")}
-
+        mutableStateOf(if (bluetoothState == BluetoothState.BluetoothDisabled) "BT disabled" else "None")
+    }
 
 
     MainContent(
@@ -214,7 +206,7 @@ fun TopStatus(
     connectionState: BleConnectionState,
     onOpenSettings: () -> Unit,
 
-) {
+    ) {
 
 
     var connState by rememberSaveable { mutableStateOf("Disconnected") }
@@ -246,16 +238,17 @@ fun TopStatus(
 
     LaunchedEffect(connectionState, scanningState) {
         println("Scanning State: $scanningState and Connection: $connectionState")
-        connState =  when (scanningState){
+        connState = when (scanningState) {
             ScanningState.Scanning -> "Scanning"
             ScanningState.ScanningFinished -> {
-            when (connectionState) {
-                BleConnectionState.Connected -> "Connected"
-                BleConnectionState.Connecting -> "Connecting"
-                BleConnectionState.Disconnected -> "Disconnected"
-                is BleConnectionState.Error -> "Error"
+                when (connectionState) {
+                    BleConnectionState.Connected -> "Connected"
+                    BleConnectionState.Connecting -> "Connecting"
+                    BleConnectionState.Disconnected -> "Disconnected"
+                    is BleConnectionState.Error -> "Error"
                 }
             }
+
             is ScanningState.ErrorScanning -> TODO()
         }
 
@@ -323,7 +316,7 @@ fun RobotNameStatus(
                 padding = padding,
                 arrangementV = arrangement
             )
-        }else{
+        } else {
             val screenSizeH = screenSize.h * 0.40f
             val padding = (screenSize.h + screenSize.w) * 0.01f
             LayoutModel(
@@ -379,11 +372,14 @@ fun AvailableRobotFound(
 
     var isLoading by remember { mutableStateOf(false) }
 
-    var devicesInfo by rememberSaveable(devices) { mutableStateOf(
-        if (devices.isEmpty()) "No Robots Found: " else "Found Robots: ")}
+    var devicesInfo by rememberSaveable(devices) {
+        mutableStateOf(
+            if (devices.isEmpty()) "No Robots Found: " else "Found Robots: "
+        )
+    }
 
     val layout = remember(screenSize) {
-        if (screenSize.w > screenSize.h){
+        if (screenSize.w > screenSize.h) {
             val screenSizeH = screenSize.h * 0.58f
             val imgSize = (screenSize.h + screenSize.w) * 0.02f
             val padding = (screenSize.h + screenSize.w) * 0.01f
@@ -394,7 +390,7 @@ fun AvailableRobotFound(
                 imgSize = imgSize,
                 itemHeight = itemHeight
             )
-        }else{
+        } else {
             val screenSizeH = screenSize.h * 0.53f
             val imgSize = (screenSize.h + screenSize.w) * 0.02f
             val padding = (screenSize.h + screenSize.w) * 0.01f
@@ -460,25 +456,27 @@ fun AvailableRobotFound(
                     )
 
                 }
+
                 else -> {
                     Image(
                         painterResource(R.drawable.retry),
                         contentDescription = null,
-                        modifier = Modifier.size(layout.imgSize * 0.90f).clickable {
-                            coroutineScope.launch {
-                                if (bluetoothState == BluetoothState.BluetoothDisabled) {
-                                    enableAlertDialog = true
-                                } else {
-                                    viewModel.startScanning(3000L)
+                        modifier = Modifier
+                            .size(layout.imgSize * 0.90f)
+                            .clickable {
+                                coroutineScope.launch {
+                                    if (bluetoothState == BluetoothState.BluetoothDisabled) {
+                                        enableAlertDialog = true
+                                    } else {
+                                        viewModel.startScanning(3000L)
+                                    }
                                 }
                             }
-                        }
                     )
 
                 }
 
             }
-
 
 
         }
@@ -551,7 +549,6 @@ fun RobotListItem(
     val isConnected = remember(connectionState, deviceName, device.key) {
         connectionState == BleConnectionState.Connected && deviceName == device.key
     }
-
 
 
     var isLoading by remember { mutableStateOf(false) }

@@ -31,7 +31,6 @@ import java.util.UUID
 class BleHelper(private val context: Context) {
 
     companion object {
-        private const val TARGET_DEVICE = "clent"
         private const val TAG = "BleHelper"
         private val DESCRIPTOR_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
     }
@@ -57,8 +56,6 @@ class BleHelper(private val context: Context) {
     var onBluetoothDisabled: (() -> Unit)? = null
     var onBluetoothEnabled: (() -> Unit)? = null
 
-    private val foundConnectedDevice = mutableListOf<BluetoothDevice>()
-
 
     private val scanCallback = object: ScanCallback(){
         override fun onScanResult(
@@ -70,9 +67,10 @@ class BleHelper(private val context: Context) {
                 result?.let {
                     val device = it.device
                     val name = device.name ?: "Unknown"
-
+                    val rssi = it.rssi
+                    if (name == "C-Robot Walker") Log.d(TAG, "Found: $name (${device.address}) Rssi: $rssi UUID: ${it.device.uuids}")
                     if (foundDevices.none { d -> d.value.address == device.address}){
-                        Log.d(TAG, "Found: $name (${device.address})")
+
                         if(name != "Unknown"){
                             foundDevices.put(name, device)
                         }

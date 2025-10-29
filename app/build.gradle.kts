@@ -13,7 +13,7 @@ android {
 
     defaultConfig {
         applicationId = "clentlogic.cloy.homecontrollerplus"
-        minSdk = 23
+        minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"

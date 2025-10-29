@@ -1,0 +1,27 @@
+package clentlogic.cloy.crobotcontroller.presentation.fakes.models
+
+import android.bluetooth.BluetoothDevice
+import clentlogic.cloy.crobotcontroller.domain.model.BleConnectionState
+import clentlogic.cloy.crobotcontroller.domain.model.BluetoothState
+import clentlogic.cloy.crobotcontroller.domain.model.CmdModel
+import clentlogic.cloy.crobotcontroller.domain.model.ScanningState
+import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+
+class FakeViewModel: MainViewContract {
+    override val cmd: StateFlow<List<CmdModel>> = MutableStateFlow(emptyList())
+    override val connectionState: StateFlow<BleConnectionState> = MutableStateFlow(BleConnectionState.Connected)
+    override val device: StateFlow<Map<String, BluetoothDevice>> = MutableStateFlow(emptyMap())
+    override val bluetoothState: StateFlow<BluetoothState> = MutableStateFlow(BluetoothState.BluetoothDisabled)
+    override val scanningState: StateFlow<ScanningState> = MutableStateFlow(ScanningState.Scanning)
+
+    override suspend fun startScanning(wait: Long) = Unit
+    override fun stopScan() = Unit
+    override fun connectToDevice(device: BluetoothDevice) = Unit
+    override fun disconnectDevice() = Unit
+    override fun sendDataToBleDevice(data: String) =  println("Data sent successfully: $data! (Fake)")
+    override fun addCommand(cmdModel: CmdModel) = Unit
+    override fun deleteCommand(cmdModel: CmdModel) = Unit
+
+}

@@ -73,8 +73,7 @@ class BlePermissionHandler(
           }else{
                bluetoothEnabled = !bluetoothEnabled
           }
-
-
+          bleHelper.startScan(3000)
      }
 
 
