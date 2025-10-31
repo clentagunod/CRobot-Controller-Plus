@@ -3,11 +3,16 @@ package clentlogic.cloy.crobotcontroller.presentation.ui.screen
 import android.content.Context
 import android.util.Log
 import android.view.MotionEvent
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
@@ -29,14 +34,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Divider
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -55,6 +62,8 @@ import clentlogic.cloy.crobotcontroller.R
 import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
 import clentlogic.cloy.crobotcontroller.presentation.model.LayoutModel
 import clentlogic.cloy.crobotcontroller.presentation.model.ScreenSizeModel
+import clentlogic.cloy.crobotcontroller.presentation.ui.components.ToggleSystemBars
+import clentlogic.cloy.crobotcontroller.presentation.ui.theme.LightBlue
 import clentlogic.cloy.crobotcontroller.presentation.ui.util.getScreenSize
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -63,28 +72,52 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun ManageDeviceScreen(
-    device: Map.Entry<String, String?>,
     viewModel: MainViewContract,
 ) {
+
+    val device by viewModel.selectedDevice.collectAsState()
+    var deviceName by remember { mutableStateOf("No Device") }
 
     val context = LocalContext.current
     val screenSize = getScreenSize()
 
-    val webView = getWebViewObject(context)
+    var hasError by remember { mutableStateOf(false) }
+
+    var isToggled by remember { mutableStateOf(false) }
+    val webView = getWebViewObject(context, onToggleButtonChange = { isToggled = it }, onError = { hasError = true})
+
+    ToggleSystemBars()
 
     LaunchedEffect(Unit) {
-        webView.loadUrl("https://www.google.com/")
+        device?.let {
+            deviceName = it.key
+        }
     }
 
     AndroidView(
-        factory = { webView },
+        factory = { webView.apply {
+            loadUrl( "http://192.168.10.148/")
+        } },
         modifier = Modifier.fillMaxSize()
     )
+
+    if (hasError){
+        Box(
+            modifier = Modifier.fillMaxSize().background(Color.White),
+            contentAlignment = Alignment.Center
+        ){
+            Text("Camera Offline!")
+        }
+    }
 
     ManageDeviceContent(
         screenSize,
         viewModel,
-        device
+        deviceName,
+        isToggled,
+        {
+            isToggled = it
+        }
     )
 
 }
@@ -94,11 +127,12 @@ fun ManageDeviceScreen(
 fun ManageDeviceContent(
     screenSize: ScreenSizeModel,
     viewModel: MainViewContract,
-    device: Map.Entry<String, String?>,
+    deviceName: String,
+    toggle: Boolean,
+    onToggleButtonChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
 
-    var isToggled by remember { mutableStateOf(false) }
 
     val layout = remember {
         val screenSizeH = screenSize.h * 0.58f
@@ -114,6 +148,7 @@ fun ManageDeviceContent(
             toggleWindowSize = toggleSize
         )
     }
+
 
     Box(Modifier.fillMaxSize()) {
 
@@ -134,8 +169,8 @@ fun ManageDeviceContent(
 
         ToggleControlConfig(
             layout,
-            isToggled,
-            device,
+            toggle,
+            deviceName,
         )
 
         Box(
@@ -144,15 +179,31 @@ fun ManageDeviceContent(
                 .padding(layout.padding)
         ) {
 
-            Image(
-                painterResource(R.drawable.toggle),
-                contentDescription = null,
-                modifier = modifier
-                    .size(layout.imgSize * 0.5f)
-                    .clickable {
-                        isToggled = !isToggled
-                    }
-            )
+            Crossfade(
+                toggle,
+                animationSpec = tween(200)
+            ) { targetState ->
+
+                val toggleIconVector by remember { mutableIntStateOf(if (!targetState) R.drawable.toggle else R.drawable.toggle_out) }
+                val iconColor by animateColorAsState(
+                    targetValue = if (toggleIconVector == R.drawable.toggle) LightBlue else Color.Black,
+                    label = "icon toggle button color"
+                )
+
+                Icon(
+                    painterResource(toggleIconVector),
+                    contentDescription = null,
+                    tint = iconColor,
+                    modifier = modifier
+                        .size(layout.imgSize * 0.3f)
+                        .clickable {
+                            onToggleButtonChange(!toggle)
+                        }
+                )
+
+                
+            }
+
 
         }
 
@@ -165,7 +216,7 @@ fun ManageDeviceContent(
 fun ToggleControlConfig(
     layout: LayoutModel,
     toggle: Boolean,
-    device: Map.Entry<String, String?>,
+    deviceName: String,
     modifier: Modifier = Modifier
 ) {
     AnimatedVisibility(
@@ -195,20 +246,19 @@ fun ToggleControlConfig(
 
         ) {
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp),
                 modifier = modifier
                     .matchParentSize()
                     .verticalScroll(scrollState)
 
-            ){
+            ) {
                 Text(
-                    device.key,
+                    deviceName,
                     modifier = modifier.align(Alignment.CenterHorizontally)
                 )
 
-                WakeCycle()
-                HorizontalDivider(thickness = 0.5.dp, color = Color.Black.copy(alpha = 0.5f))
-                CameraConfig()
+                WakeCycle(layout)
+                CameraConfig(layout)
 
 
             }
@@ -220,11 +270,11 @@ fun ToggleControlConfig(
 }
 
 
-
 @Composable
 fun WakeCycle(
+    layout: LayoutModel,
     modifier: Modifier = Modifier,
-){
+) {
 
     var isSleeping by remember { mutableStateOf(false) }
 
@@ -235,12 +285,12 @@ fun WakeCycle(
         style = MaterialTheme.typography.labelSmall
     )
 
-    Row (
+    Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
         modifier = modifier
             .fillMaxWidth()
-    ){
+    ) {
         Text("Sleep")
         Switch(
             checked = isSleeping,
@@ -249,16 +299,19 @@ fun WakeCycle(
 
                 Log.d("WakeCycle", "WakeCycle: $isSleeping ")
             },
+            modifier = modifier.scale(0.7f)
         )
 
     }
+    HorizontalDivider(thickness = 0.5.dp, color = Color.Black.copy(alpha = 0.3f))
 
 }
 
 @Composable
 fun CameraConfig(
+    layout: LayoutModel,
     modifier: Modifier = Modifier,
-){
+) {
 
     var isCameraOn by remember { mutableStateOf(false) }
 
@@ -269,22 +322,39 @@ fun CameraConfig(
         style = MaterialTheme.typography.labelSmall
     )
 
-    Row (
+    Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
         modifier = modifier
             .fillMaxWidth()
-    ){
+    ) {
         Text("Camera")
         Switch(
             checked = isCameraOn,
             {
                 isCameraOn = !isCameraOn
             },
+            modifier = modifier.scale(0.7f)
         )
 
     }
 
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = modifier
+            .fillMaxWidth()
+
+    ){
+        Text("Camera refresh")
+
+        Icon(
+            painterResource(R.drawable.retry),
+            contentDescription = null,
+            tint = Color.Unspecified
+        )
+
+    }
 
 
 }
@@ -457,18 +527,39 @@ fun ControlButton(
 
 
 fun getWebViewObject(
-    context: Context
+    context: Context,
+    onToggleButtonChange: (Boolean) -> Unit,
+    onError: () -> Unit,
 ): WebView {
+
     return object : WebView(context) {
         override fun onTouchEvent(event: MotionEvent?): Boolean {
-            return true
+            onToggleButtonChange(false)
+            return super.onTouchEvent(event)
         }
 
     }.apply {
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true
-        settings.cacheMode = WebSettings.LOAD_DEFAULT
-        webViewClient = WebViewClient()
+        settings.useWideViewPort = true
+        settings.loadWithOverviewMode = true
+        settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+        settings.cacheMode = WebSettings.LOAD_NO_CACHE
+        settings.layoutAlgorithm = WebSettings.LayoutAlgorithm.NORMAL
+        setInitialScale(1)
+
+        webViewClient = object: WebViewClient() {
+            override fun onReceivedError(
+                view: WebView?,
+                request: WebResourceRequest?,
+                error: WebResourceError?
+            ) {
+                super.onReceivedError(view, request, error)
+                onError()
+
+            }
+        }
+
     }
 
 }

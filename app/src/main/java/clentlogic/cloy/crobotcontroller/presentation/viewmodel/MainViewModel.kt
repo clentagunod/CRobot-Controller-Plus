@@ -46,7 +46,8 @@ class MainViewModel @Inject constructor(
 
 
 ) : ViewModel(), MainViewContract {
-
+    private val _selectedDevice = MutableStateFlow<Map.Entry<String, BluetoothDevice>?>(null)
+    override val selectedDevice: StateFlow<Map.Entry<String, BluetoothDevice>?> = _selectedDevice
 
     private val _cmd = MutableStateFlow<List<CmdModel>>(emptyList())
     override val cmd: StateFlow<List<CmdModel>> = _cmd
@@ -102,6 +103,10 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    override fun selectBleDevice(device: Map.Entry<String, BluetoothDevice>) {
+        _selectedDevice.value = device
+
+    }
 
     override suspend fun startScanning(wait: Long) = startScan(wait)
     override fun stopScan() = stopScanning()

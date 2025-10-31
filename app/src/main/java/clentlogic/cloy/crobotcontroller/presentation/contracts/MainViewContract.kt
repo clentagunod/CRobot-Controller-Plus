@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 
 interface MainViewContract {
 
+    val selectedDevice: StateFlow<Map.Entry<String, BluetoothDevice>?>
     val cmd: StateFlow<List<CmdModel>>
     val connectionState: StateFlow<BleConnectionState>
     val device: StateFlow<Map<String, BluetoothDevice>>
@@ -24,6 +25,8 @@ interface MainViewContract {
     fun sendDataToBleDevice(data: String)
     fun addCommand(cmdModel: CmdModel)
     fun deleteCommand(cmdModel: CmdModel)
+
+    fun selectBleDevice(device: Map.Entry<String, BluetoothDevice>)
 
 
 }

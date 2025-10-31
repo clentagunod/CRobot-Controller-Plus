@@ -9,3 +9,5 @@ val Pink = Color(0xFFF59DB2)
 val Pink50 = Color(0xFFE9B5CE)
 val LimeGreen =  Color(0xFF97BA45)
 
+val LightBlue = Color(0xFF2ca9bc)
+
