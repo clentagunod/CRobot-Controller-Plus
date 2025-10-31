@@ -92,7 +92,11 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             CRobotControllerTheme {
-                AppNavHost(this, blePermissionHandler)
+                LandscapeCompose {
+                    ManageDeviceScreen(FakeViewModel())
+
+                }
+
             }
 
         }

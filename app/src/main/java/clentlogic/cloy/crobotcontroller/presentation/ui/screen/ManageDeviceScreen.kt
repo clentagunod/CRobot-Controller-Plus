@@ -12,7 +12,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
@@ -63,6 +62,7 @@ import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
 import clentlogic.cloy.crobotcontroller.presentation.model.LayoutModel
 import clentlogic.cloy.crobotcontroller.presentation.model.ScreenSizeModel
 import clentlogic.cloy.crobotcontroller.presentation.ui.components.ToggleSystemBars
+import clentlogic.cloy.crobotcontroller.presentation.ui.theme.DeepTeal
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.LightBlue
 import clentlogic.cloy.crobotcontroller.presentation.ui.util.getScreenSize
 import kotlinx.coroutines.delay
@@ -75,64 +75,21 @@ fun ManageDeviceScreen(
     viewModel: MainViewContract,
 ) {
 
+    val context = LocalContext.current
+    val screenSize = getScreenSize()
+
+
     val device by viewModel.selectedDevice.collectAsState()
     var deviceName by remember { mutableStateOf("No Device") }
 
-    val context = LocalContext.current
-    val screenSize = getScreenSize()
 
     var hasError by remember { mutableStateOf(false) }
 
     var isToggled by remember { mutableStateOf(false) }
-    val webView = getWebViewObject(context, onToggleButtonChange = { isToggled = it }, onError = { hasError = true})
-
-    ToggleSystemBars()
-
-    LaunchedEffect(Unit) {
-        device?.let {
-            deviceName = it.key
-        }
-    }
-
-    AndroidView(
-        factory = { webView.apply {
-            loadUrl( "http://192.168.10.148/")
-        } },
-        modifier = Modifier.fillMaxSize()
-    )
-
-    if (hasError){
-        Box(
-            modifier = Modifier.fillMaxSize().background(Color.White),
-            contentAlignment = Alignment.Center
-        ){
-            Text("Camera Offline!")
-        }
-    }
-
-    ManageDeviceContent(
-        screenSize,
-        viewModel,
-        deviceName,
-        isToggled,
-        {
-            isToggled = it
-        }
-    )
-
-}
-
-
-@Composable
-fun ManageDeviceContent(
-    screenSize: ScreenSizeModel,
-    viewModel: MainViewContract,
-    deviceName: String,
-    toggle: Boolean,
-    onToggleButtonChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-
+    val webView = getWebViewObject(
+        context,
+        onToggleButtonChange = { isToggled = it },
+        onError = { hasError = true })
 
     val layout = remember {
         val screenSizeH = screenSize.h * 0.58f
@@ -148,6 +105,82 @@ fun ManageDeviceContent(
             toggleWindowSize = toggleSize
         )
     }
+    ToggleSystemBars()
+
+    LaunchedEffect(Unit) {
+        device?.let {
+            deviceName = it.key
+        }
+    }
+
+    AndroidView(
+        factory = {
+            webView.apply {
+                loadUrl("http://192.168.10.148/")
+            }
+        },
+        modifier = Modifier.fillMaxSize()
+    )
+
+    if (hasError) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("Camera Offline!")
+        }
+    }else{
+        Box(
+            modifier = Modifier.fillMaxSize()
+                .padding(layout.padding),
+
+        ){
+            Icon(
+                painterResource(R.drawable.battery_empty),
+                tint = Color.Red.copy(0.50f),
+                contentDescription = null,
+                modifier = Modifier.align(Alignment.TopEnd)
+            )
+
+            Icon(
+                painterResource(R.drawable.target),
+                tint = Color.Gray.copy(0.50f),
+                contentDescription = null,
+                modifier = Modifier.align(Alignment.Center)
+
+            )
+        }
+    }
+
+    ManageDeviceContent(
+        layout,
+        screenSize,
+        viewModel,
+        deviceName,
+        isToggled,
+        {
+            isToggled = it
+        }
+    )
+
+}
+
+
+@Composable
+private fun ManageDeviceContent(
+    layout: LayoutModel,
+    screenSize: ScreenSizeModel,
+    viewModel: MainViewContract,
+    deviceName: String,
+    toggle: Boolean,
+    onToggleButtonChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+
+
+
 
 
     Box(Modifier.fillMaxSize()) {
@@ -157,6 +190,8 @@ fun ManageDeviceContent(
                 .fillMaxSize()
                 .padding(layout.padding)
         ) {
+
+
 
             RobotController(
                 layout,
@@ -184,9 +219,10 @@ fun ManageDeviceContent(
                 animationSpec = tween(200)
             ) { targetState ->
 
+
                 val toggleIconVector by remember { mutableIntStateOf(if (!targetState) R.drawable.toggle else R.drawable.toggle_out) }
                 val iconColor by animateColorAsState(
-                    targetValue = if (toggleIconVector == R.drawable.toggle) LightBlue else Color.Black,
+                    targetValue = if (!targetState) LightBlue else Color.White,
                     label = "icon toggle button color"
                 )
 
@@ -195,13 +231,13 @@ fun ManageDeviceContent(
                     contentDescription = null,
                     tint = iconColor,
                     modifier = modifier
-                        .size(layout.imgSize * 0.3f)
+                        .size(layout.imgSize * 0.35f)
                         .clickable {
                             onToggleButtonChange(!toggle)
                         }
                 )
 
-                
+
             }
 
 
@@ -213,7 +249,7 @@ fun ManageDeviceContent(
 }
 
 @Composable
-fun ToggleControlConfig(
+private fun ToggleControlConfig(
     layout: LayoutModel,
     toggle: Boolean,
     deviceName: String,
@@ -239,21 +275,23 @@ fun ToggleControlConfig(
 
         Box(
             modifier = modifier
-                .background(Color.White, shape = shape)
+                .background(DeepTeal, shape = shape)
                 .size(layout.toggleWindowSize)
                 .padding(layout.padding)
                 .clickable(false) {}
 
         ) {
+
             Column(
-                verticalArrangement = Arrangement.spacedBy(5.dp),
                 modifier = modifier
                     .matchParentSize()
                     .verticalScroll(scrollState)
 
             ) {
+
                 Text(
                     deviceName,
+                    color = Color.White,
                     modifier = modifier.align(Alignment.CenterHorizontally)
                 )
 
@@ -271,17 +309,15 @@ fun ToggleControlConfig(
 
 
 @Composable
-fun WakeCycle(
+private fun WakeCycle(
     layout: LayoutModel,
     modifier: Modifier = Modifier,
 ) {
 
-    var isSleeping by remember { mutableStateOf(false) }
-
     Text(
         "Sleep",
         modifier = modifier,
-        color = Color.Black.copy(alpha = 0.50f),
+        color = Color.White.copy(alpha = 0.50f),
         style = MaterialTheme.typography.labelSmall
     )
 
@@ -291,34 +327,26 @@ fun WakeCycle(
         modifier = modifier
             .fillMaxWidth()
     ) {
-        Text("Sleep")
-        Switch(
-            checked = isSleeping,
-            {
-                isSleeping = !isSleeping
-
-                Log.d("WakeCycle", "WakeCycle: $isSleeping ")
-            },
-            modifier = modifier.scale(0.7f)
-        )
+        Text("Sleep", color = Color.White)
+        ToggleSwitchElements()
 
     }
+
     HorizontalDivider(thickness = 0.5.dp, color = Color.Black.copy(alpha = 0.3f))
 
 }
 
 @Composable
-fun CameraConfig(
+private fun CameraConfig(
     layout: LayoutModel,
     modifier: Modifier = Modifier,
 ) {
 
-    var isCameraOn by remember { mutableStateOf(false) }
 
     Text(
         "Camera",
         modifier = modifier,
-        color = Color.Black.copy(alpha = 0.50f),
+        color = Color.White.copy(alpha = 0.50f),
         style = MaterialTheme.typography.labelSmall
     )
 
@@ -328,40 +356,42 @@ fun CameraConfig(
         modifier = modifier
             .fillMaxWidth()
     ) {
-        Text("Camera")
-        Switch(
-            checked = isCameraOn,
-            {
-                isCameraOn = !isCameraOn
-            },
-            modifier = modifier.scale(0.7f)
-        )
+        Text("Camera", color = Color.White)
+        ToggleSwitchElements()
 
     }
-
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
         modifier = modifier
             .fillMaxWidth()
-
-    ){
-        Text("Camera refresh")
-
-        Icon(
-            painterResource(R.drawable.retry),
-            contentDescription = null,
-            tint = Color.Unspecified
-        )
+    ) {
+        Text("Flash", color = Color.White)
+        ToggleSwitchElements()
 
     }
 
-
 }
 
+@Composable
+fun ToggleSwitchElements(
+    onSwitchEnabled: (Boolean) -> Unit = { println("isSwitchToggled: $it") },
+    modifier: Modifier = Modifier
+) {
+    var isSwitchEnabled by remember { mutableStateOf(false) }
+
+    Switch(
+        checked = isSwitchEnabled,
+        onCheckedChange = {
+            isSwitchEnabled = !isSwitchEnabled
+            onSwitchEnabled(isSwitchEnabled)
+        },
+        modifier = modifier.scale(0.7f)
+    )
+}
 
 @Composable
-fun RobotController(
+private fun RobotController(
     layout: LayoutModel,
     viewModel: MainViewContract,
     modifier: Modifier = Modifier,
@@ -469,7 +499,7 @@ fun RobotControlCamera(
 
 
 @Composable
-fun ControlButton(
+private fun ControlButton(
     id: Int,
     cmd: String,
     layout: LayoutModel,
@@ -486,16 +516,17 @@ fun ControlButton(
         animationSpec = tween(200)
     )
     val alpha by animateFloatAsState(
-        targetValue = if (isPressed) 0.20f else 0.40f,
+        targetValue = if (isPressed) 0.15f else 0.30f,
         label = "Control Button",
         animationSpec = tween(200)
     )
 
     val coroutineScope = rememberCoroutineScope()
 
-    Image(
+    Icon(
         painterResource(id),
         contentDescription = null,
+        tint = Color.Unspecified,
         modifier = modifier
             .size(layout.imgSize)
             .alpha(alpha)
@@ -526,7 +557,7 @@ fun ControlButton(
 }
 
 
-fun getWebViewObject(
+private fun getWebViewObject(
     context: Context,
     onToggleButtonChange: (Boolean) -> Unit,
     onError: () -> Unit,
@@ -548,7 +579,7 @@ fun getWebViewObject(
         settings.layoutAlgorithm = WebSettings.LayoutAlgorithm.NORMAL
         setInitialScale(1)
 
-        webViewClient = object: WebViewClient() {
+        webViewClient = object : WebViewClient() {
             override fun onReceivedError(
                 view: WebView?,
                 request: WebResourceRequest?,
