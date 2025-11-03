@@ -1,13 +1,9 @@
 package clentlogic.cloy.crobotcontroller.presentation.ui.navigation
 
-import android.bluetooth.BluetoothDevice
 import android.content.Context.MODE_PRIVATE
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.core.content.edit
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
@@ -19,6 +15,7 @@ import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
 import clentlogic.cloy.crobotcontroller.presentation.ui.activity.MainCompose
 import clentlogic.cloy.crobotcontroller.presentation.ui.screen.CheckPermissionCompose
 import clentlogic.cloy.crobotcontroller.presentation.ui.screen.ManageDeviceScreen
+import clentlogic.cloy.crobotcontroller.presentation.ui.components.splash.SplashLoadingScreen
 import clentlogic.cloy.crobotcontroller.presentation.ui.util.LandscapeCompose
 import clentlogic.cloy.crobotcontroller.presentation.viewmodel.MainViewModel
 
@@ -66,9 +63,14 @@ fun AppNavHost(
                     },
                     onOpenDevice = {
                         viewModel.selectBleDevice(it)
-                        navController.navigate("manage_device")
+                        navController.navigate("splash")
                     }
                 )
+            }
+
+            composable("splash"){
+                SplashLoadingScreen(navController, 3000)
+
             }
 
             composable("manage_device") { backStackEntry ->
@@ -86,6 +88,8 @@ fun AppNavHost(
                 }
 
             }
+
+
 
 
         }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -36,6 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import clentlogic.cloy.crobotcontroller.R
 import clentlogic.cloy.crobotcontroller.data.communication.ble.BlePermissionHandler
+import clentlogic.cloy.crobotcontroller.presentation.ui.components.AnimatedLottieJson
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.DeepTeal
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.LimeGreen
 
@@ -91,7 +93,7 @@ fun CheckPermissionCompose(
                 descY = screenHeight * 0.70f
                 buttonY = screenHeight * 0.80f
                 imageY = screenHeight * 0.20f
-                imageSize = 300.dp
+                imageSize = 330.dp
                 buttonW = 0.45f
                 buttonH = 0.08f
             }
@@ -103,14 +105,19 @@ fun CheckPermissionCompose(
                 contentScale = ContentScale.Fit
             )
 
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .offset(y = imageY)
+            ){
+                AnimatedLottieJson(R.raw.back_ground, imageSize)
+            }
+
 
             Image(
                 painterResource(R.drawable.firmware),
                 contentDescription = "homeImage",
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .offset(y = imageY)
-                    .size(imageSize)
+
             )
 
 

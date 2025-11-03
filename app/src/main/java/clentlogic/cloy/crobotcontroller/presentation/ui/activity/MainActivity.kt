@@ -16,12 +16,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -62,6 +64,7 @@ import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
 import clentlogic.cloy.crobotcontroller.presentation.fakes.models.FakeViewModel
 import clentlogic.cloy.crobotcontroller.presentation.model.LayoutModel
 import clentlogic.cloy.crobotcontroller.presentation.model.ScreenSizeModel
+import clentlogic.cloy.crobotcontroller.presentation.ui.components.AnimatedLottieJson
 import clentlogic.cloy.crobotcontroller.presentation.ui.components.EnableBluetoothAlertDialog
 import clentlogic.cloy.crobotcontroller.presentation.ui.components.ToggleSystemBars
 import clentlogic.cloy.crobotcontroller.presentation.ui.navigation.AppNavHost
@@ -71,6 +74,11 @@ import clentlogic.cloy.crobotcontroller.presentation.ui.theme.DeepTeal
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.LightPink
 import clentlogic.cloy.crobotcontroller.presentation.ui.util.LandscapeCompose
 import clentlogic.cloy.crobotcontroller.presentation.ui.util.getScreenSize
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.animateLottieCompositionAsState
+import com.airbnb.lottie.compose.rememberLottieComposition
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -94,7 +102,6 @@ class MainActivity : ComponentActivity() {
             CRobotControllerTheme {
                 LandscapeCompose {
                     ManageDeviceScreen(FakeViewModel())
-
                 }
 
             }

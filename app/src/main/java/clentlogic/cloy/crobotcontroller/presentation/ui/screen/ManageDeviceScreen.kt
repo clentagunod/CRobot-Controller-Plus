@@ -1,6 +1,8 @@
 package clentlogic.cloy.crobotcontroller.presentation.ui.screen
 
 import android.content.Context
+import android.content.Context.MODE_PRIVATE
+import android.content.SharedPreferences
 import android.util.Log
 import android.view.MotionEvent
 import android.webkit.WebResourceError
@@ -8,6 +10,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.activity.ComponentActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
@@ -37,7 +40,10 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchColors
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -57,13 +63,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.edit
 import clentlogic.cloy.crobotcontroller.R
 import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
 import clentlogic.cloy.crobotcontroller.presentation.model.LayoutModel
 import clentlogic.cloy.crobotcontroller.presentation.model.ScreenSizeModel
+import clentlogic.cloy.crobotcontroller.presentation.ui.components.AnimatedLottieJson
 import clentlogic.cloy.crobotcontroller.presentation.ui.components.ToggleSystemBars
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.DeepTeal
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.LightBlue
+import clentlogic.cloy.crobotcontroller.presentation.ui.theme.LimeGreen
+import clentlogic.cloy.crobotcontroller.presentation.ui.theme.Pink
 import clentlogic.cloy.crobotcontroller.presentation.ui.util.getScreenSize
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -78,6 +88,10 @@ fun ManageDeviceScreen(
     val context = LocalContext.current
     val screenSize = getScreenSize()
 
+    val activity = context as ComponentActivity
+    val prefs = activity.getSharedPreferences("app_prefs", MODE_PRIVATE)
+
+    val cameraUrl by remember { mutableStateOf(prefs.getString("camera_url", "https://cam.ccontroller.online/") ?: "") }
 
     val device by viewModel.selectedDevice.collectAsState()
     var deviceName by remember { mutableStateOf("No Device") }
@@ -116,7 +130,7 @@ fun ManageDeviceScreen(
     AndroidView(
         factory = {
             webView.apply {
-                loadUrl("http://192.168.10.148/")
+                loadUrl(cameraUrl)
             }
         },
         modifier = Modifier.fillMaxSize()
@@ -129,7 +143,7 @@ fun ManageDeviceScreen(
                 .background(Color.White),
             contentAlignment = Alignment.Center
         ) {
-            Text("Camera Offline!")
+            AnimatedLottieJson(R.raw.lost_connection, 150.dp)
         }
     }else{
         Box(
@@ -156,8 +170,9 @@ fun ManageDeviceScreen(
 
     ManageDeviceContent(
         layout,
-        screenSize,
         viewModel,
+        prefs,
+        cameraUrl,
         deviceName,
         isToggled,
         {
@@ -171,8 +186,9 @@ fun ManageDeviceScreen(
 @Composable
 private fun ManageDeviceContent(
     layout: LayoutModel,
-    screenSize: ScreenSizeModel,
     viewModel: MainViewContract,
+    prefs: SharedPreferences,
+    cameraUrl: String,
     deviceName: String,
     toggle: Boolean,
     onToggleButtonChange: (Boolean) -> Unit,
@@ -181,7 +197,7 @@ private fun ManageDeviceContent(
 
 
 
-
+    var showRobotController by remember { mutableStateOf(prefs.getBoolean("robot_controller_switch", true)) }
 
     Box(Modifier.fillMaxSize()) {
 
@@ -190,14 +206,15 @@ private fun ManageDeviceContent(
                 .fillMaxSize()
                 .padding(layout.padding)
         ) {
+            if (showRobotController){
 
+                RobotController(
+                    layout,
+                    modifier = modifier.align(Alignment.BottomEnd),
+                    viewModel = viewModel
+                )
 
-
-            RobotController(
-                layout,
-                modifier = modifier.align(Alignment.BottomEnd),
-                viewModel = viewModel
-            )
+            }
 
         }
 
@@ -205,7 +222,13 @@ private fun ManageDeviceContent(
         ToggleControlConfig(
             layout,
             toggle,
+            prefs,
+            cameraUrl,
             deviceName,
+            showRobotController,
+            onShowRobotControllerChange = {
+                showRobotController = it
+            }
         )
 
         Box(
@@ -252,9 +275,14 @@ private fun ManageDeviceContent(
 private fun ToggleControlConfig(
     layout: LayoutModel,
     toggle: Boolean,
+    prefs: SharedPreferences,
+    cameraUrl: String,
     deviceName: String,
+    showRobotController: Boolean,
+    onShowRobotControllerChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
+
     AnimatedVisibility(
         visible = toggle,
         enter = slideInHorizontally(
@@ -287,6 +315,7 @@ private fun ToggleControlConfig(
                     .matchParentSize()
                     .verticalScroll(scrollState)
 
+
             ) {
 
                 Text(
@@ -295,22 +324,64 @@ private fun ToggleControlConfig(
                     modifier = modifier.align(Alignment.CenterHorizontally)
                 )
 
-                WakeCycle(layout)
-                CameraConfig(layout)
+                ControlsConfig(
+                    prefs,
+                    showRobotController,
+                    onShowRobotControllerChange
+                )
+                WakeCycle()
+                CameraConfig()
 
 
             }
 
-        }
+        }   
 
     }
 
 }
 
 
+
+@Composable
+private fun ControlsConfig(
+    prefs: SharedPreferences,
+    showRobotController: Boolean,
+    onShowRobotControllerChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+){
+    Text(
+        "Control Button",
+        modifier = modifier,
+        color = Color.White.copy(alpha = 0.50f),
+        style = MaterialTheme.typography.labelSmall
+    )
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = modifier
+            .fillMaxWidth()
+    ) {
+        Text("Control", color = Color.White)
+        ToggleSwitchElements(
+            isSwitchEnabled = showRobotController,
+            onSwitchEnabled = {
+                prefs.edit{ putBoolean("robot_controller_switch", it)}
+                onShowRobotControllerChange(it)
+            }
+        )
+
+    }
+
+    HorizontalDivider(thickness = 0.5.dp, color = Color.Black.copy(alpha = 0.3f))
+
+
+}
+
+
 @Composable
 private fun WakeCycle(
-    layout: LayoutModel,
     modifier: Modifier = Modifier,
 ) {
 
@@ -338,7 +409,6 @@ private fun WakeCycle(
 
 @Composable
 private fun CameraConfig(
-    layout: LayoutModel,
     modifier: Modifier = Modifier,
 ) {
 
@@ -375,17 +445,19 @@ private fun CameraConfig(
 
 @Composable
 fun ToggleSwitchElements(
+    isSwitchEnabled: Boolean = false,
     onSwitchEnabled: (Boolean) -> Unit = { println("isSwitchToggled: $it") },
     modifier: Modifier = Modifier
 ) {
-    var isSwitchEnabled by remember { mutableStateOf(false) }
 
     Switch(
         checked = isSwitchEnabled,
         onCheckedChange = {
-            isSwitchEnabled = !isSwitchEnabled
-            onSwitchEnabled(isSwitchEnabled)
+            onSwitchEnabled(!isSwitchEnabled)
         },
+        colors = SwitchDefaults.colors(
+            checkedTrackColor = LimeGreen,
+        ),
         modifier = modifier.scale(0.7f)
     )
 }
@@ -556,7 +628,7 @@ private fun ControlButton(
 
 }
 
-
+@Composable
 private fun getWebViewObject(
     context: Context,
     onToggleButtonChange: (Boolean) -> Unit,
@@ -588,6 +660,17 @@ private fun getWebViewObject(
                 super.onReceivedError(view, request, error)
                 onError()
 
+            }
+
+            override fun onPageFinished(view: WebView, url: String) {
+                super.onPageFinished(view, url)
+                view.evaluateJavascript(
+                    "(function() { return document.body.innerText; })();"
+                ) { result ->
+                    if (result.contains("Cloudflare Tunnel error")) {
+                        onError()
+                    }
+                }
             }
         }
 

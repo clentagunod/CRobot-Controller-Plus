@@ -77,6 +77,8 @@ dependencies {
 
     implementation("com.valentinilk.shimmer:compose-shimmer:1.3.1")
 
+    implementation("com.airbnb.android:lottie-compose:6.1.0")
+
 
 
 
