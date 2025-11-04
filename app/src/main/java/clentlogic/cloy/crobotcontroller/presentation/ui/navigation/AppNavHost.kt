@@ -1,65 +1,91 @@
 package clentlogic.cloy.crobotcontroller.presentation.ui.navigation
 
-import android.content.Context.MODE_PRIVATE
-import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.core.content.edit
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
+import clentlogic.cloy.crobotcontroller.R
 import clentlogic.cloy.crobotcontroller.data.communication.ble.BlePermissionHandler
 import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
 import clentlogic.cloy.crobotcontroller.presentation.ui.activity.MainCompose
+import clentlogic.cloy.crobotcontroller.presentation.ui.components.AnimatedLottieJson
+import clentlogic.cloy.crobotcontroller.presentation.ui.components.splash.SplashLoadingScreen
 import clentlogic.cloy.crobotcontroller.presentation.ui.screen.CheckPermissionCompose
 import clentlogic.cloy.crobotcontroller.presentation.ui.screen.ManageDeviceScreen
-import clentlogic.cloy.crobotcontroller.presentation.ui.components.splash.SplashLoadingScreen
+import clentlogic.cloy.crobotcontroller.presentation.ui.screen.SettingsScreen
 import clentlogic.cloy.crobotcontroller.presentation.ui.util.LandscapeCompose
 import clentlogic.cloy.crobotcontroller.presentation.viewmodel.MainViewModel
 
 @Composable
 fun AppNavHost(
-    activity: ComponentActivity,
-    blePermissionHandler: BlePermissionHandler
+    blePermissionHandler: BlePermissionHandler,
+    viewModel: MainViewContract = hiltViewModel<MainViewModel>()
 ) {
     val navController = rememberNavController()
-    val prefs = activity.getSharedPreferences("app_prefs", MODE_PRIVATE)
-    val permissionGranted = prefs.getBoolean("permissions_ok", false)
+    val permission by viewModel.permissionFlow.collectAsState(null)
 
 
     NavHost(
         navController = navController,
-        startDestination = if (permissionGranted) "main_graph" else "check_permission"
+        startDestination = "check_permission"
     ) {
         composable(
             "check_permission"
         ) {
-            CheckPermissionCompose(
-                blePermissionHandler,
-                onPermitted = {
-                    prefs.edit { putBoolean("permissions_ok", true) }
-                    navController.navigate("main_graph") {
-                        popUpTo("check_permission") { inclusive = true }
+
+            when (permission) {
+                true -> {
+                    LaunchedEffect(Unit) {
+                        navController.navigate("main_graph") {
+                            popUpTo("check_permission") { inclusive = true }
+                        }
+                    }
+
+                }
+
+                false -> {
+                    CheckPermissionCompose(
+                        blePermissionHandler,
+                        onPermitted = {
+                            viewModel.setPermission(true)
+                        }
+                    )
+
+                }
+
+                null -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AnimatedLottieJson(R.raw.animated_hand_loading, 150.dp)
                     }
                 }
-            )
+
+
+            }
+
         }
 
         navigation(startDestination = "main", route = "main_graph") {
             composable("main") { backStackEntry ->
-                val parentEntry = remember(backStackEntry) {
-                    navController.getBackStackEntry("main_graph")
-                }
-
-                val viewModel: MainViewContract = hiltViewModel<MainViewModel>(parentEntry)
 
                 MainCompose(
                     viewModel,
                     blePermissionHandler,
                     onOpenSettings = {
-                        println("Settings Opened")
+                        navController.navigate("settings_screen")
+
                     },
                     onOpenDevice = {
                         viewModel.selectBleDevice(it)
@@ -68,18 +94,12 @@ fun AppNavHost(
                 )
             }
 
-            composable("splash"){
+            composable("splash") {
                 SplashLoadingScreen(navController, 3000)
 
             }
 
             composable("manage_device") { backStackEntry ->
-                val parentEntry = remember(backStackEntry) {
-                    navController.getBackStackEntry("main_graph")
-                }
-
-                val viewModel: MainViewContract = hiltViewModel<MainViewModel>(parentEntry)
-
                 LandscapeCompose {
                     ManageDeviceScreen(
                         viewModel
@@ -88,8 +108,9 @@ fun AppNavHost(
                 }
 
             }
-
-
+            composable("settings_screen") {
+                SettingsScreen()
+            }
 
 
         }

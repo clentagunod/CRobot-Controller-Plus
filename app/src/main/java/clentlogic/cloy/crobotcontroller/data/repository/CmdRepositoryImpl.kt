@@ -3,7 +3,7 @@ package clentlogic.cloy.crobotcontroller.data.repository
 import android.app.Application
 import android.util.Log
 import clentlogic.cloy.crobotcontroller.R
-import clentlogic.cloy.crobotcontroller.data.local.dao.CmdDao
+import clentlogic.cloy.crobotcontroller.data.local.roomdb.dao.CmdDao
 import clentlogic.cloy.crobotcontroller.data.mapper.toDomain
 import clentlogic.cloy.crobotcontroller.data.mapper.toEntity
 import clentlogic.cloy.crobotcontroller.domain.model.CmdModel

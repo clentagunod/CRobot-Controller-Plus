@@ -54,6 +54,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import clentlogic.cloy.crobotcontroller.R
 import clentlogic.cloy.crobotcontroller.data.communication.ble.BleHelper
 import clentlogic.cloy.crobotcontroller.data.communication.ble.BlePermissionHandler
@@ -69,11 +70,13 @@ import clentlogic.cloy.crobotcontroller.presentation.ui.components.EnableBluetoo
 import clentlogic.cloy.crobotcontroller.presentation.ui.components.ToggleSystemBars
 import clentlogic.cloy.crobotcontroller.presentation.ui.navigation.AppNavHost
 import clentlogic.cloy.crobotcontroller.presentation.ui.screen.ManageDeviceScreen
+import clentlogic.cloy.crobotcontroller.presentation.ui.screen.SettingsScreen
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.CRobotControllerTheme
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.DeepTeal
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.LightPink
 import clentlogic.cloy.crobotcontroller.presentation.ui.util.LandscapeCompose
 import clentlogic.cloy.crobotcontroller.presentation.ui.util.getScreenSize
+import clentlogic.cloy.crobotcontroller.presentation.viewmodel.MainViewModel
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
@@ -100,10 +103,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             CRobotControllerTheme {
-                LandscapeCompose {
-                    ManageDeviceScreen(FakeViewModel())
-                }
-
+                AppNavHost(blePermissionHandler)
             }
 
         }
@@ -157,7 +157,7 @@ fun MainCompose(
 }
 
 @Composable
-fun MainContent(
+private fun MainContent(
     screenSize: ScreenSizeModel,
     viewModel: MainViewContract,
     bluetoothState: BluetoothState,
@@ -205,7 +205,7 @@ fun MainContent(
 }
 
 @Composable
-fun TopStatus(
+private fun TopStatus(
     screenSize: ScreenSizeModel,
     scanningState: ScanningState,
     connectionState: BleConnectionState,
@@ -305,7 +305,7 @@ fun TopStatus(
 }
 
 @Composable
-fun RobotNameStatus(
+private fun RobotNameStatus(
     screenSize: ScreenSizeModel,
     deviceName: String,
 
@@ -361,7 +361,7 @@ fun RobotNameStatus(
 }
 
 @Composable
-fun AvailableRobotFound(
+private fun AvailableRobotFound(
     screenSize: ScreenSizeModel,
     viewModel: MainViewContract,
     bluetoothState: BluetoothState,
@@ -505,7 +505,7 @@ fun AvailableRobotFound(
 
 
 @Composable
-fun RobotList(
+private fun RobotList(
     layout: LayoutModel,
     devices: Map<String, BluetoothDevice>,
     viewModel: MainViewContract,
@@ -540,7 +540,7 @@ fun RobotList(
 }
 
 @Composable
-fun RobotListItem(
+private fun RobotListItem(
     device: Map.Entry<String, BluetoothDevice>,
     layout: LayoutModel,
     coroutineScope: CoroutineScope,

@@ -5,6 +5,7 @@ import clentlogic.cloy.crobotcontroller.domain.model.BleConnectionState
 import clentlogic.cloy.crobotcontroller.domain.model.BluetoothState
 import clentlogic.cloy.crobotcontroller.domain.model.CmdModel
 import clentlogic.cloy.crobotcontroller.domain.model.ScanningState
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -16,6 +17,8 @@ interface MainViewContract {
     val device: StateFlow<Map<String, BluetoothDevice>>
     val bluetoothState: StateFlow<BluetoothState>
     val scanningState: StateFlow<ScanningState>
+    val permissionFlow: Flow<Boolean>
+    val toggleControlButtonFlow: Flow<Boolean>
 
     suspend fun startScanning(wait: Long)
     fun stopScan()
@@ -27,6 +30,9 @@ interface MainViewContract {
     fun deleteCommand(cmdModel: CmdModel)
 
     fun selectBleDevice(device: Map.Entry<String, BluetoothDevice>)
+
+    fun setPermission(isPermitted: Boolean)
+    fun setToggleControlButtonState(isToggled: Boolean)
 
 
 }

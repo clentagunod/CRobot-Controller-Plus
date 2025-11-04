@@ -1,4 +1,4 @@
-package clentlogic.cloy.crobotcontroller.data.local.entity
+package clentlogic.cloy.crobotcontroller.data.local.roomdb.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

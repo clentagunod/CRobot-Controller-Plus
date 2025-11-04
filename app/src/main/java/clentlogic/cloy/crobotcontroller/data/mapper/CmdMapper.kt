@@ -1,6 +1,6 @@
 package clentlogic.cloy.crobotcontroller.data.mapper
 
-import clentlogic.cloy.crobotcontroller.data.local.entity.CmdEntity
+import clentlogic.cloy.crobotcontroller.data.local.roomdb.entity.CmdEntity
 import clentlogic.cloy.crobotcontroller.domain.model.CmdModel
 
 

@@ -114,13 +114,6 @@ fun CheckPermissionCompose(
             }
 
 
-            Image(
-                painterResource(R.drawable.firmware),
-                contentDescription = "homeImage",
-
-            )
-
-
             Text(
                 text = "CRobot Controller+",
                 style = MaterialTheme.typography.titleLarge,

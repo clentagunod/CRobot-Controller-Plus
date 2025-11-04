@@ -1,4 +1,4 @@
-package clentlogic.cloy.crobotcontroller.data.local.dao
+package clentlogic.cloy.crobotcontroller.data.local.roomdb.dao
 
 import androidx.room.Dao
 import androidx.room.Delete
@@ -6,7 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
-import clentlogic.cloy.crobotcontroller.data.local.entity.CmdEntity
+import clentlogic.cloy.crobotcontroller.data.local.roomdb.entity.CmdEntity
 import kotlinx.coroutines.flow.Flow
 
 

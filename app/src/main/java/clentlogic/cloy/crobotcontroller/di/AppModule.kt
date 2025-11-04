@@ -4,10 +4,11 @@ import android.app.Application
 import android.content.Context
 import androidx.room.Room
 import clentlogic.cloy.crobotcontroller.data.communication.ble.BleHelper
-import clentlogic.cloy.crobotcontroller.data.local.dao.CmdDao
-import clentlogic.cloy.crobotcontroller.data.local.db.CmdDatabase
+import clentlogic.cloy.crobotcontroller.data.local.roomdb.dao.CmdDao
+import clentlogic.cloy.crobotcontroller.data.local.roomdb.db.CmdDatabase
 import clentlogic.cloy.crobotcontroller.domain.repository.BleRepository
 import clentlogic.cloy.crobotcontroller.domain.repository.CmdRepository
+import clentlogic.cloy.crobotcontroller.domain.repository.DataStoreRepository
 import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.ConnectBleDevice
 import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.DisconnectBleDevice
 import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.SendDataToBle
@@ -21,6 +22,10 @@ import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.AddCmd
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.DeleteCmd
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.GetAllCmd
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.UpdateCmd
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetPermissionState
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetToggleButtonState
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.dataflow.GetPermissionsDataFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.dataflow.GetToggleButtonControlDataFlow
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -106,6 +111,35 @@ object AppModule {
     @Singleton
     fun provideGetScanningStateFlow(repository: BleRepository): GetScanningStateFlow =
         GetScanningStateFlow(repository)
+
+
+    @Provides
+    @Singleton
+    fun provideContext(@ApplicationContext app: Context): Context = app
+
+
+    @Provides
+    @Singleton
+    fun provideGetPermissionDataFlow(repository: DataStoreRepository): GetPermissionsDataFlow =
+        GetPermissionsDataFlow(repository)
+
+    @Provides
+    @Singleton
+    fun provideSetPermissionOk(repository: DataStoreRepository): SetPermissionState =
+        SetPermissionState(repository)
+
+    @Provides
+    @Singleton
+    fun provideGetToggleButtonControlDataFlow(repository: DataStoreRepository): GetToggleButtonControlDataFlow =
+        GetToggleButtonControlDataFlow(repository)
+
+    @Provides
+    @Singleton
+    fun provideSeToggleButtonState(repository: DataStoreRepository): SetToggleButtonState =
+        SetToggleButtonState(repository)
+
+
+
 
 
 

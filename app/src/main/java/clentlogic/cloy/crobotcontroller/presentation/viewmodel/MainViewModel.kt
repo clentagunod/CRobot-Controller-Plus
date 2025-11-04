@@ -1,10 +1,10 @@
 package clentlogic.cloy.crobotcontroller.presentation.viewmodel
 
 import android.bluetooth.BluetoothDevice
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import clentlogic.cloy.crobotcontroller.domain.model.CmdModel
-import clentlogic.cloy.crobotcontroller.domain.model.ScanningState
 import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.ConnectBleDevice
 import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.DisconnectBleDevice
 import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.SendDataToBle
@@ -17,6 +17,10 @@ import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.dataflow.GetS
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.AddCmd
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.DeleteCmd
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.GetAllCmd
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetPermissionState
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetToggleButtonState
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.dataflow.GetPermissionsDataFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.dataflow.GetToggleButtonControlDataFlow
 import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -42,10 +46,16 @@ class MainViewModel @Inject constructor(
     private val getDeviceDataFlow: GetDeviceDataFlow,
     private val getConnectionStateFlow: GetConnectionStateFlow,
     private val getBluetoothStateFlow: GetBluetoothStateFlow,
-    private val getScanningStateFlow: GetScanningStateFlow
+    private val getScanningStateFlow: GetScanningStateFlow,
+    private val getPermissionsDataFlow: GetPermissionsDataFlow,
+    private val setPermissionsOk: SetPermissionState,
+    private val getToggleButtonControlDataFlow: GetToggleButtonControlDataFlow,
+    private val setToggleButtonState: SetToggleButtonState
 
 
 ) : ViewModel(), MainViewContract {
+
+
     private val _selectedDevice = MutableStateFlow<Map.Entry<String, BluetoothDevice>?>(null)
     override val selectedDevice: StateFlow<Map.Entry<String, BluetoothDevice>?> = _selectedDevice
 
@@ -59,6 +69,10 @@ class MainViewModel @Inject constructor(
     override val connectionState = getConnectionStateFlow()
     override val bluetoothState = getBluetoothStateFlow()
     override val scanningState = getScanningStateFlow()
+
+    override val permissionFlow = getPermissionsDataFlow()
+    override val toggleControlButtonFlow = getToggleButtonControlDataFlow()
+
 
     init {
         loadCmd()
@@ -113,6 +127,19 @@ class MainViewModel @Inject constructor(
     override fun connectToDevice(device: BluetoothDevice) = connectBleDevice(device)
     override fun disconnectDevice() = disconnectBleDevice()
     override fun sendDataToBleDevice(data: String) = sendDataToBle(data)
+
+    override fun setPermission(isPermitted: Boolean) {
+        viewModelScope.launch {
+            setPermissionsOk(isPermitted)
+        }
+    }
+
+    override fun setToggleControlButtonState(isToggled: Boolean){
+        viewModelScope.launch {
+            Log.d("SETTINGS", "Saving toggle: $isToggled")
+            setToggleButtonState(isToggled)
+        }
+    }
 
 
 }
