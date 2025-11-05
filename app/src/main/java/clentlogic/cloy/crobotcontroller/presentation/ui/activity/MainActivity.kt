@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -42,6 +41,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -54,10 +54,12 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.unit.sp
+import clentlogic.cloy.crobotcontroller.CRobotControllerApp.Companion.LOCAL_MODE
 import clentlogic.cloy.crobotcontroller.R
 import clentlogic.cloy.crobotcontroller.data.communication.ble.BleHelper
 import clentlogic.cloy.crobotcontroller.data.communication.ble.BlePermissionHandler
+import clentlogic.cloy.crobotcontroller.data.communication.wifi.WifiHelper
 import clentlogic.cloy.crobotcontroller.domain.model.BleConnectionState
 import clentlogic.cloy.crobotcontroller.domain.model.BluetoothState
 import clentlogic.cloy.crobotcontroller.domain.model.ScanningState
@@ -65,23 +67,15 @@ import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
 import clentlogic.cloy.crobotcontroller.presentation.fakes.models.FakeViewModel
 import clentlogic.cloy.crobotcontroller.presentation.model.LayoutModel
 import clentlogic.cloy.crobotcontroller.presentation.model.ScreenSizeModel
-import clentlogic.cloy.crobotcontroller.presentation.ui.components.AnimatedLottieJson
 import clentlogic.cloy.crobotcontroller.presentation.ui.components.EnableBluetoothAlertDialog
 import clentlogic.cloy.crobotcontroller.presentation.ui.components.ToggleSystemBars
 import clentlogic.cloy.crobotcontroller.presentation.ui.navigation.AppNavHost
 import clentlogic.cloy.crobotcontroller.presentation.ui.screen.ManageDeviceScreen
-import clentlogic.cloy.crobotcontroller.presentation.ui.screen.SettingsScreen
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.CRobotControllerTheme
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.DeepTeal
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.LightPink
 import clentlogic.cloy.crobotcontroller.presentation.ui.util.LandscapeCompose
 import clentlogic.cloy.crobotcontroller.presentation.ui.util.getScreenSize
-import clentlogic.cloy.crobotcontroller.presentation.viewmodel.MainViewModel
-import com.airbnb.lottie.compose.LottieAnimation
-import com.airbnb.lottie.compose.LottieCompositionSpec
-import com.airbnb.lottie.compose.LottieConstants
-import com.airbnb.lottie.compose.animateLottieCompositionAsState
-import com.airbnb.lottie.compose.rememberLottieComposition
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -93,21 +87,23 @@ class MainActivity : ComponentActivity() {
     lateinit var bleHelper: BleHelper
 
     private lateinit var blePermissionHandler: BlePermissionHandler
+    private lateinit var wifiHelper: WifiHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-
         blePermissionHandler = BlePermissionHandler(this, bleHelper)
+        wifiHelper = WifiHelper(this)
 
         setContent {
             CRobotControllerTheme {
-                AppNavHost(blePermissionHandler)
+              AppNavHost(blePermissionHandler)
             }
 
         }
 
+        wifiHelper.registerWifiStateListener()
         bleHelper.registerBluetoothStateReceiver()
 
     }
@@ -115,556 +111,7 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         bleHelper.unregisterBluetoothStateReceiver()
-    }
-}
-
-
-@SuppressLint("ConfigurationScreenWidthHeight")
-@Composable
-fun MainCompose(
-    viewModel: MainViewContract,
-    blePermissionHandler: BlePermissionHandler,
-    onOpenSettings: () -> Unit,
-    onOpenDevice: (Map.Entry<String, BluetoothDevice>) -> Unit
-) {
-
-    val bluetoothState by viewModel.bluetoothState.collectAsState()
-    val connectionState by viewModel.connectionState.collectAsState()
-    val scanningState by viewModel.scanningState.collectAsState()
-
-    ToggleSystemBars()
-
-    val screenSize = getScreenSize()
-
-    var deviceName by rememberSaveable(bluetoothState) {
-        mutableStateOf(if (bluetoothState == BluetoothState.BluetoothDisabled) "BT disabled" else "None")
-    }
-
-
-    MainContent(
-        screenSize,
-        viewModel,
-        bluetoothState,
-        connectionState,
-        scanningState,
-        blePermissionHandler,
-        deviceName,
-        { deviceName = it },
-        onOpenSettings,
-        onOpenDevice,
-    )
-
-}
-
-@Composable
-private fun MainContent(
-    screenSize: ScreenSizeModel,
-    viewModel: MainViewContract,
-    bluetoothState: BluetoothState,
-    connectionState: BleConnectionState,
-    scanningState: ScanningState,
-    blePermissionHandler: BlePermissionHandler,
-    deviceName: String,
-    onDeviceNameChange: (String) -> Unit,
-    onOpenSettings: () -> Unit,
-    onOpenDevice: (Map.Entry<String, BluetoothDevice>) -> Unit
-) {
-
-    Column {
-        //TopView
-        TopStatus(
-            screenSize,
-            scanningState,
-            connectionState,
-            onOpenSettings,
-        )
-
-        //DeviceView (middle)
-        RobotNameStatus(
-            screenSize,
-            deviceName,
-
-            )
-        //
-        AvailableRobotFound(
-            screenSize,
-            viewModel,
-            bluetoothState,
-            scanningState,
-            blePermissionHandler,
-            connectionState,
-            deviceName,
-            onDeviceNameChange,
-            onOpenDevice,
-
-            )
-
-
-    }
-
-}
-
-@Composable
-private fun TopStatus(
-    screenSize: ScreenSizeModel,
-    scanningState: ScanningState,
-    connectionState: BleConnectionState,
-    onOpenSettings: () -> Unit,
-
-    ) {
-
-
-    var connState by rememberSaveable { mutableStateOf("Disconnected") }
-    val textColor by animateColorAsState(
-        targetValue = when (connState) {
-            "Connected" -> Color.Green
-            "Disconnected", "Error" -> Color.Red
-            "Scanning" -> Color.White.copy(alpha = 0.85f)
-            else -> Color.White
-        },
-        label = "Text Color"
-
-    )
-
-
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val settingsImgScale by animateFloatAsState(
-        targetValue = if (isPressed) 0.75f else 1f,
-        label = "Settings Image"
-    )
-
-    val layout = remember(screenSize) {
-        val h = screenSize.h * 0.20f
-        val padding = (screenSize.h + screenSize.w) * 0.01f
-        val imgSize = (screenSize.h + screenSize.w) * 0.03f
-        LayoutModel(h, padding = padding, imgSize = imgSize)
-    }
-
-    LaunchedEffect(connectionState, scanningState) {
-        println("Scanning State: $scanningState and Connection: $connectionState")
-        connState = when (scanningState) {
-            ScanningState.Scanning -> "Scanning"
-            ScanningState.ScanningFinished -> {
-                when (connectionState) {
-                    BleConnectionState.Connected -> "Connected"
-                    BleConnectionState.Connecting -> "Connecting"
-                    BleConnectionState.Disconnected -> "Disconnected"
-                    is BleConnectionState.Error -> "Error"
-                }
-            }
-
-            is ScanningState.ErrorScanning -> TODO()
-        }
-
-    }
-
-    Row(
-        verticalAlignment = Alignment.Bottom,
-        horizontalArrangement = Arrangement.SpaceBetween,
-        modifier = Modifier
-            .background(DeepTeal)
-            .fillMaxWidth()
-            .height(layout.screenSizeH)
-            .padding(layout.padding)
-    ) {
-
-        Column {
-
-            Text(
-                connState,
-                color = textColor,
-                style = MaterialTheme.typography.displayMedium
-            )
-
-            Text(
-                "Status",
-                color = Color.White,
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.alpha(layout.alpha)
-            )
-        }
-
-        Image(
-            painterResource(R.drawable.settings),
-            contentDescription = "Settings Icon",
-            modifier = Modifier
-                .size(layout.imgSize)
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null
-                ) {
-                    onOpenSettings()
-                }
-                .scale(settingsImgScale)
-        )
-
-    }
-
-
-}
-
-@Composable
-private fun RobotNameStatus(
-    screenSize: ScreenSizeModel,
-    deviceName: String,
-
-    ) {
-
-    val layout = remember(screenSize) {
-        if (screenSize.w > screenSize.h) {
-            val screenSizeH = screenSize.h * 0.30f
-            val padding = (screenSize.h + screenSize.w) * 0.01f
-            val arrangement = Arrangement.Top
-            LayoutModel(
-                screenSizeH = screenSizeH,
-                padding = padding,
-                arrangementV = arrangement
-            )
-        } else {
-            val screenSizeH = screenSize.h * 0.40f
-            val padding = (screenSize.h + screenSize.w) * 0.01f
-            LayoutModel(
-                screenSizeH = screenSizeH,
-                padding = padding
-            )
-
-        }
-
-    }
-
-
-    Column(
-        horizontalAlignment = layout.alignmentH,
-        verticalArrangement = layout.arrangementV,
-        modifier = Modifier
-            .background(DeepTeal)
-            .fillMaxWidth()
-            .height(layout.screenSizeH)
-            .padding(layout.padding)
-    ) {
-
-        Text(
-            deviceName,
-            color = Color.White,
-            style = MaterialTheme.typography.displayLarge
-        )
-
-        Text(
-            "Robot",
-            color = Color.White,
-            style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier.alpha(layout.alpha)
-        )
-
-    }
-}
-
-@Composable
-private fun AvailableRobotFound(
-    screenSize: ScreenSizeModel,
-    viewModel: MainViewContract,
-    bluetoothState: BluetoothState,
-    scanningState: ScanningState,
-    blePermissionHandler: BlePermissionHandler,
-    connectionState: BleConnectionState,
-    deviceName: String,
-    onDeviceNameChange: (String) -> Unit,
-    onOpenDevice: (Map.Entry<String, BluetoothDevice>) -> Unit
-) {
-    val devices by viewModel.device.collectAsState()
-    val coroutineScope = rememberCoroutineScope()
-
-    var isLoading by remember { mutableStateOf(false) }
-
-    var devicesInfo by rememberSaveable(devices) {
-        mutableStateOf(
-            if (devices.isEmpty()) "No Robots Found: " else "Found Robots: "
-        )
-    }
-
-    val layout = remember(screenSize) {
-        if (screenSize.w > screenSize.h) {
-            val screenSizeH = screenSize.h * 0.58f
-            val imgSize = (screenSize.h + screenSize.w) * 0.02f
-            val padding = (screenSize.h + screenSize.w) * 0.01f
-            val itemHeight = screenSizeH * 0.30f
-            LayoutModel(
-                screenSizeH = screenSizeH,
-                padding = padding,
-                imgSize = imgSize,
-                itemHeight = itemHeight
-            )
-        } else {
-            val screenSizeH = screenSize.h * 0.53f
-            val imgSize = (screenSize.h + screenSize.w) * 0.02f
-            val padding = (screenSize.h + screenSize.w) * 0.01f
-            val itemHeight = screenSizeH * 0.20f
-            LayoutModel(
-                screenSizeH = screenSizeH,
-                padding = padding,
-                imgSize = imgSize,
-                itemHeight = itemHeight
-            )
-        }
-
-    }
-
-
-    var enableAlertDialog by remember { mutableStateOf(false) }
-
-    LaunchedEffect(scanningState) {
-        isLoading = scanningState == ScanningState.Scanning
-    }
-
-    EnableBluetoothAlertDialog(
-        enableAlertDialog,
-        onDismiss = {
-            println("Dismissed")
-            enableAlertDialog = false
-
-        },
-        onConfirm = {
-            println("Confirmed")
-            enableAlertDialog = false
-            blePermissionHandler.enableBluetooth()
-
-        }
-
-    )
-
-
-    Column(
-        modifier = Modifier
-            .background(Color.White)
-            .fillMaxWidth()
-            .height(layout.screenSizeH)
-            .padding(layout.padding)
-            .consumeWindowInsets(WindowInsets.systemBars.asPaddingValues())
-
-    ) {
-        Row {
-            Text(
-                devicesInfo,
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(bottom = layout.padding)
-            )
-
-            Spacer(Modifier.width(layout.padding))
-
-            when {
-                isLoading -> {
-                    CircularProgressIndicator(
-                        color = DeepTeal,
-                        strokeWidth = 3.dp,
-                        modifier = Modifier.size(layout.imgSize * 0.90f)
-                    )
-
-                }
-
-                else -> {
-                    Icon(
-                        painterResource(R.drawable.retry),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(layout.imgSize * 0.90f)
-                            .clickable {
-                                coroutineScope.launch {
-                                    if (bluetoothState == BluetoothState.BluetoothDisabled) {
-                                        enableAlertDialog = true
-                                    } else {
-                                        viewModel.startScanning(3000L)
-                                    }
-                                }
-                            }
-                    )
-
-                }
-
-            }
-
-
-        }
-
-
-        RobotList(
-            layout,
-            devices,
-            viewModel,
-            connectionState,
-            coroutineScope,
-            deviceName,
-            onDeviceNameChange,
-            onOpenDevice,
-
-            )
-
-    }
-
-}
-
-
-@Composable
-private fun RobotList(
-    layout: LayoutModel,
-    devices: Map<String, BluetoothDevice>,
-    viewModel: MainViewContract,
-    connectionState: BleConnectionState,
-    coroutineScope: CoroutineScope,
-    deviceName: String,
-    onDeviceNameChange: (String) -> Unit,
-    onOpenDevice: (Map.Entry<String, BluetoothDevice>) -> Unit
-) {
-
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(layout.padding),
-        userScrollEnabled = true
-    ) {
-        items(
-            devices.entries.toList(),
-            key = { it.key }
-        ) { device ->
-
-            RobotListItem(
-                device = device,
-                layout = layout,
-                coroutineScope = coroutineScope,
-                viewModel = viewModel,
-                connectionState = connectionState,
-                deviceName = deviceName,
-                onDeviceNameChange = onDeviceNameChange,
-                onOpenDevice = onOpenDevice,
-            )
-        }
-    }
-}
-
-@Composable
-private fun RobotListItem(
-    device: Map.Entry<String, BluetoothDevice>,
-    layout: LayoutModel,
-    coroutineScope: CoroutineScope,
-    viewModel: MainViewContract,
-    connectionState: BleConnectionState,
-    deviceName: String,
-    onDeviceNameChange: (String) -> Unit,
-    onOpenDevice: (Map.Entry<String, BluetoothDevice>) -> Unit
-) {
-
-    val isConnected = remember(connectionState, deviceName, device.key) {
-        connectionState == BleConnectionState.Connected && deviceName == device.key
-    }
-
-
-    var isLoading by remember { mutableStateOf(false) }
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val color by animateColorAsState(
-        targetValue = if (isPressed) DeepTeal else Color.Black,
-        animationSpec = tween(durationMillis = 100),
-        label = "Connect Button Text"
-    )
-
-    val shape = remember { RoundedCornerShape(layout.borderRadius) }
-
-    LaunchedEffect(connectionState) {
-        println(connectionState)
-        when (connectionState) {
-            BleConnectionState.Connected -> {
-                if (deviceName == device.key) {
-                    isLoading = false
-                    Log.d("DeviceListItem", "Device connected: ${device.key}")
-                }
-            }
-
-            BleConnectionState.Disconnected -> {
-                isLoading = false
-
-            }
-
-            is BleConnectionState.Error -> {
-                isLoading = false
-            }
-
-            else -> {}
-        }
-    }
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(layout.itemHeight)
-            .background(LightPink, shape = shape)
-            .padding(layout.padding)
-    ) {
-        Column {
-            Text(
-                device.key,
-                color = DeepTeal,
-                style = MaterialTheme.typography.headlineSmall
-            )
-            Text(
-                "${device.value}",
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.alpha(layout.alpha)
-            )
-        }
-
-        when {
-            isConnected -> {
-                TextButton(onClick = {
-                    onOpenDevice(device)
-                }) {
-                    Text(
-                        "Open",
-                        color = color,
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier.alpha(layout.alpha)
-                    )
-                }
-
-            }
-
-            isLoading -> {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(layout.imgSize),
-                    color = Color.White,
-                    strokeWidth = 3.dp
-                )
-            }
-
-            else -> {
-                Text(
-                    "Connect",
-                    color = color,
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier
-                        .alpha(layout.alpha)
-                        .clickable(
-                            interactionSource = interactionSource,
-                            indication = null
-                        ) {
-                            isLoading = true
-                            onDeviceNameChange(device.key)
-
-                            coroutineScope.launch {
-                                try {
-                                    if (connectionState == BleConnectionState.Connected) {
-                                        viewModel.disconnectDevice()
-                                    }
-                                    viewModel.connectToDevice(device.value)
-                                } catch (e: Exception) {
-                                    Log.e("DeviceListItem", "Connection failed", e)
-                                    isLoading = false
-                                    onDeviceNameChange("No Device")
-                                }
-                            }
-                        }
-                )
-            }
-        }
+        wifiHelper.unregisterWifiStateListener()
     }
 }
 

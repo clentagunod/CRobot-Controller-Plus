@@ -1,9 +1,9 @@
 package clentlogic.cloy.crobotcontroller.di
 
-import clentlogic.cloy.crobotcontroller.data.repository.BleRepositoryImpl
+import clentlogic.cloy.crobotcontroller.data.repository.RobotControllerRepositoryImpl
 import clentlogic.cloy.crobotcontroller.data.repository.CmdRepositoryImpl
 import clentlogic.cloy.crobotcontroller.data.repository.DataStoreRepositoryImpl
-import clentlogic.cloy.crobotcontroller.domain.repository.BleRepository
+import clentlogic.cloy.crobotcontroller.domain.repository.RobotControllerRepository
 import clentlogic.cloy.crobotcontroller.domain.repository.CmdRepository
 import clentlogic.cloy.crobotcontroller.domain.repository.DataStoreRepository
 import dagger.Binds
@@ -25,9 +25,9 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindsBleRepository(
-        bleRepositoryImpl: BleRepositoryImpl
-    ): BleRepository
+    abstract fun bindsRobotControllerRepository(
+        bleRepositoryImpl: RobotControllerRepositoryImpl
+    ): RobotControllerRepository
 
     @Binds
     @Singleton

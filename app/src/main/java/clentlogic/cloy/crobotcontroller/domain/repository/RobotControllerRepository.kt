@@ -5,9 +5,8 @@ import clentlogic.cloy.crobotcontroller.domain.model.BleConnectionState
 import clentlogic.cloy.crobotcontroller.domain.model.BluetoothState
 import clentlogic.cloy.crobotcontroller.domain.model.ScanningState
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 
-interface BleRepository {
+interface RobotControllerRepository {
 
 
     val deviceDataFlow: MutableStateFlow<Map<String, BluetoothDevice>>
@@ -17,9 +16,11 @@ interface BleRepository {
 
     fun startScan(wait: Long)
     fun stopScanning()
-    fun connectBleDevice(device: BluetoothDevice)
-    fun disconnectBleDevice()
-    fun sendDataToBle(data: String)
+    fun connectRobot(device: BluetoothDevice)
+    fun disconnectRobot()
+    fun sendDataToRobot(data: ByteArray)
+
+
 
 
 }

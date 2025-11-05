@@ -1,17 +1,34 @@
 package clentlogic.cloy.crobotcontroller.data.repository
 
 import android.bluetooth.BluetoothDevice
+import android.content.Context
+import android.util.Log
+import clentlogic.cloy.crobotcontroller.CRobotControllerApp.Companion.GLOBAL_MODE
+import clentlogic.cloy.crobotcontroller.CRobotControllerApp.Companion.LOCAL_MODE
 import clentlogic.cloy.crobotcontroller.data.communication.ble.BleHelper
+import clentlogic.cloy.crobotcontroller.data.local.datastore.observeControlModeState
+import clentlogic.cloy.crobotcontroller.data.remote.fb.FirebaseHelper
 import clentlogic.cloy.crobotcontroller.domain.model.BleConnectionState
 import clentlogic.cloy.crobotcontroller.domain.model.BluetoothState
 import clentlogic.cloy.crobotcontroller.domain.model.ScanningState
-import clentlogic.cloy.crobotcontroller.domain.repository.BleRepository
+import clentlogic.cloy.crobotcontroller.domain.repository.RobotControllerRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import javax.inject.Inject
 
-class BleRepositoryImpl @Inject constructor(
+class RobotControllerRepositoryImpl @Inject constructor(
+    @ApplicationContext app: Context,
     private val bleHelper: BleHelper,
-): BleRepository {
+    private val firebaseHelper: FirebaseHelper,
+): RobotControllerRepository {
+
+    private val controlMode = app.observeControlModeState()
+    private var currentMode = LOCAL_MODE
 
     private val _deviceDataFlow = MutableStateFlow<Map<String, BluetoothDevice>>(emptyMap())
     override val deviceDataFlow: MutableStateFlow<Map<String, BluetoothDevice>> = _deviceDataFlow
@@ -28,6 +45,22 @@ class BleRepositoryImpl @Inject constructor(
 
 
     init {
+
+        CoroutineScope(Dispatchers.IO).launch {
+            controlMode.collect {
+                currentMode = it
+                if (currentMode == LOCAL_MODE) firebaseHelper.stopRealtimeListener() else firebaseHelper.realtimeListener()
+                Log.d("BleImpl", "Current Mode: $it, CurrentModeFromController: $currentMode")
+
+            }
+
+        }
+
+
+        firebaseHelper.onChildRead = {
+            println("Data: $it")
+        }
+
 
         bleHelper.onDeviceFound = {
             _deviceDataFlow.value = it
@@ -72,10 +105,28 @@ class BleRepositoryImpl @Inject constructor(
 
 
 
-    override fun startScan(wait: Long) = bleHelper.startScan(wait)
-    override fun stopScanning() = bleHelper.stopScan()
-    override fun connectBleDevice(device: BluetoothDevice) = bleHelper.connect(device)
-    override fun disconnectBleDevice() = bleHelper.disconnect()
-    override fun sendDataToBle(data: String) = bleHelper.sendData(data)
+
+
+    override fun startScan(wait: Long) = bleHelper.startScanBle(wait)
+    override fun stopScanning() = bleHelper.stopScanBle()
+    override fun connectRobot(device: BluetoothDevice) = bleHelper.connectBle(device)
+    override fun disconnectRobot() = bleHelper.disconnectBle()
+
+
+
+
+    override fun sendDataToRobot(data: ByteArray) {
+        if (currentMode == LOCAL_MODE) {
+            bleHelper.sendDataBle(data)
+        } else {
+            val dataInt = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN).int
+            firebaseHelper.sendDataFirebase(dataInt)
+        }
+
+    }
+
+
+
+
 
 }

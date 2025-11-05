@@ -180,7 +180,7 @@ class BleHelper(private val context: Context) {
                             onBluetoothDisabled?.invoke()
                             onDeviceFound?.invoke(emptyMap())
                             onDisconnected?.invoke()
-                            disconnect()
+                            disconnectBle()
 
                         }
                         BluetoothAdapter.STATE_ON -> {
@@ -207,7 +207,7 @@ class BleHelper(private val context: Context) {
         }
     }
 
-    fun connect(device: BluetoothDevice){
+    fun connectBle(device: BluetoothDevice){
         if (!checkPermission(Manifest.permission.BLUETOOTH_CONNECT)) return
 
         onConnecting?.invoke()
@@ -217,7 +217,7 @@ class BleHelper(private val context: Context) {
 
     }
 
-    fun disconnect(){
+    fun disconnectBle(){
         if (!checkPermission(Manifest.permission.BLUETOOTH_CONNECT)) return
 
         bleGatt?.let { gatt ->
@@ -231,17 +231,16 @@ class BleHelper(private val context: Context) {
 
     }
 
-    fun sendData(data: String){
+    fun sendDataBle(data: ByteArray){
         if (txChar == null || bleGatt == null) return
         if (!checkPermission(Manifest.permission.BLUETOOTH_CONNECT)) return
 
         try {
-            val bytes = data.toByteArray(Charsets.UTF_8)
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU){
-                bleGatt?.writeCharacteristic(txChar!!, bytes, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
+                bleGatt?.writeCharacteristic(txChar!!, data, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
             }else{
-                txChar?.value = bytes
+                txChar?.value = data
                 bleGatt?.writeCharacteristic(txChar)
             }
         } catch (e: Exception){
@@ -249,7 +248,7 @@ class BleHelper(private val context: Context) {
         }
     }
 
-    fun startScan(wait: Long){
+    fun startScanBle(wait: Long){
         if (isScanning) return
         if (!checkPermission(Manifest.permission.BLUETOOTH_SCAN)) return
         if (!isBluetoothEnabled()){
@@ -269,13 +268,13 @@ class BleHelper(private val context: Context) {
 
         job = CoroutineScope(Dispatchers.IO).launch {
             delay(wait)
-            stopScan()
+            stopScanBle()
             onStoppedScanning?.invoke()
         }
 
     }
 
-    fun stopScan(){
+    fun stopScanBle(){
         if (!isScanning) return
         if (!checkPermission(Manifest.permission.BLUETOOTH_SCAN)) return
 

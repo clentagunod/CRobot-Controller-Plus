@@ -1,26 +1,28 @@
 package clentlogic.cloy.crobotcontroller.presentation.viewmodel
 
 import android.bluetooth.BluetoothDevice
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import clentlogic.cloy.crobotcontroller.domain.model.CmdModel
-import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.ConnectBleDevice
-import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.DisconnectBleDevice
-import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.SendDataToBle
-import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.StartScan
-import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.StopScanning
-import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.dataflow.GetBluetoothStateFlow
-import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.dataflow.GetConnectionStateFlow
-import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.dataflow.GetDeviceDataFlow
-import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.dataflow.GetScanningStateFlow
+import clentlogic.cloy.crobotcontroller.domain.repository.RobotControllerRepository
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.ConnectRobot
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.DisconnectRobot
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.SendDataToRobot
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.StartScan
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.StopScanning
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetBluetoothStateFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetConnectionStateFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetDeviceDataFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetScanningStateFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.AddCmd
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.DeleteCmd
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.GetAllCmd
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetControlMode
 import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetPermissionState
 import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetToggleButtonState
-import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.dataflow.GetPermissionsDataFlow
-import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.dataflow.GetToggleButtonControlDataFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.dataflow.GetControlModeDataFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.dataflow.GetPermissionsDataFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.dataflow.GetToggleButtonControlDataFlow
 import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -40,9 +42,9 @@ class MainViewModel @Inject constructor(
     private val deleteCmd: DeleteCmd,
     private val startScan: StartScan,
     private val stopScanning: StopScanning,
-    private val connectBleDevice: ConnectBleDevice,
-    private val disconnectBleDevice: DisconnectBleDevice,
-    private val sendDataToBle: SendDataToBle,
+    private val connectBleDevice: ConnectRobot,
+    private val disconnectBleDevice: DisconnectRobot,
+    private val sendDataToBle: SendDataToRobot,
     private val getDeviceDataFlow: GetDeviceDataFlow,
     private val getConnectionStateFlow: GetConnectionStateFlow,
     private val getBluetoothStateFlow: GetBluetoothStateFlow,
@@ -50,10 +52,12 @@ class MainViewModel @Inject constructor(
     private val getPermissionsDataFlow: GetPermissionsDataFlow,
     private val setPermissionsOk: SetPermissionState,
     private val getToggleButtonControlDataFlow: GetToggleButtonControlDataFlow,
-    private val setToggleButtonState: SetToggleButtonState
+    private val setToggleButtonState: SetToggleButtonState,
+    private val getControlModeDataFlow: GetControlModeDataFlow,
+    private val setControlMode: SetControlMode,
 
 
-) : ViewModel(), MainViewContract {
+    ) : ViewModel(), MainViewContract {
 
 
     private val _selectedDevice = MutableStateFlow<Map.Entry<String, BluetoothDevice>?>(null)
@@ -72,6 +76,7 @@ class MainViewModel @Inject constructor(
 
     override val permissionFlow = getPermissionsDataFlow()
     override val toggleControlButtonFlow = getToggleButtonControlDataFlow()
+    override val controlModeFlow = getControlModeDataFlow()
 
 
     init {
@@ -126,7 +131,7 @@ class MainViewModel @Inject constructor(
     override fun stopScan() = stopScanning()
     override fun connectToDevice(device: BluetoothDevice) = connectBleDevice(device)
     override fun disconnectDevice() = disconnectBleDevice()
-    override fun sendDataToBleDevice(data: String) = sendDataToBle(data)
+    override fun sendDataToBleDevice(data: ByteArray) = sendDataToBle(data)
 
     override fun setPermission(isPermitted: Boolean) {
         viewModelScope.launch {
@@ -136,8 +141,13 @@ class MainViewModel @Inject constructor(
 
     override fun setToggleControlButtonState(isToggled: Boolean){
         viewModelScope.launch {
-            Log.d("SETTINGS", "Saving toggle: $isToggled")
             setToggleButtonState(isToggled)
+        }
+    }
+
+    override fun setControlModeState(setMode: String) {
+        viewModelScope.launch {
+            setControlMode(setMode)
         }
     }
 

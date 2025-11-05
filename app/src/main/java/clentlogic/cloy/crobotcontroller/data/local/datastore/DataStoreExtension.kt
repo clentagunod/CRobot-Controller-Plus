@@ -6,6 +6,8 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
+import clentlogic.cloy.crobotcontroller.CRobotControllerApp.Companion.LOCAL_MODE
+import clentlogic.cloy.crobotcontroller.data.local.datastore.AppPreferences.CONTROL_MODE
 import clentlogic.cloy.crobotcontroller.data.local.datastore.AppPreferences.PERMISSIONS_OK
 import clentlogic.cloy.crobotcontroller.data.local.datastore.AppPreferences.TOGGLE_CONTROL_BUTTON
 import kotlinx.coroutines.flow.Flow
@@ -23,6 +25,9 @@ fun Context.observePermissionState(): Flow<Boolean> = dataStore.data
 fun Context.observeToggleControlButtonState() : Flow<Boolean> = dataStore.data
     .map {value -> value[TOGGLE_CONTROL_BUTTON] ?: false }
 
+fun Context.observeControlModeState(): Flow<String> = dataStore.data
+    .map { value -> value[CONTROL_MODE]  ?: LOCAL_MODE}
+
 
 
 suspend fun Context.setPermissionState(isPermitted: Boolean) {
@@ -36,4 +41,10 @@ suspend fun Context.setToggleControlButtonState(isToggled: Boolean){
         it[TOGGLE_CONTROL_BUTTON] = isToggled
     }
 
+}
+
+suspend fun Context.setControlModeState(setMode: String){
+    dataStore.edit {
+        it[CONTROL_MODE] = setMode
+    }
 }

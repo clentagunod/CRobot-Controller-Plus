@@ -1,22 +1,21 @@
 package clentlogic.cloy.crobotcontroller.presentation.ui.screen
 
 import android.content.Context
-import android.content.Context.MODE_PRIVATE
-import android.content.SharedPreferences
 import android.view.MotionEvent
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import androidx.activity.ComponentActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -35,14 +34,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -51,7 +49,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -67,9 +64,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.edit
-import androidx.lifecycle.viewmodel.compose.viewModel
 import clentlogic.cloy.crobotcontroller.R
+import clentlogic.cloy.crobotcontroller.domain.model.BleConnectionState
 import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
 import clentlogic.cloy.crobotcontroller.presentation.model.LayoutModel
 import clentlogic.cloy.crobotcontroller.presentation.ui.components.AnimatedLottieJson
@@ -79,7 +75,6 @@ import clentlogic.cloy.crobotcontroller.presentation.ui.theme.LightBlue
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.LimeGreen
 import clentlogic.cloy.crobotcontroller.presentation.ui.util.getScreenSize
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 
@@ -87,21 +82,21 @@ import kotlinx.coroutines.launch
 @Composable
 fun ManageDeviceScreen(
     viewModel: MainViewContract,
+    onDisconnectRobot: () -> Unit,
 ) {
 
+    val connState by viewModel.connectionState.collectAsState()
+    var toggleDisconnectedPopup by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val screenSize = getScreenSize()
 
-
     val device by viewModel.selectedDevice.collectAsState()
     var deviceName by remember { mutableStateOf("No Device") }
-
 
     var hasError by remember { mutableStateOf(false) }
 
     var isToggled by remember { mutableStateOf(false) }
-
 
     var reloadKey by remember { mutableIntStateOf(0) }
 
@@ -109,9 +104,8 @@ fun ManageDeviceScreen(
         context,
         onToggleButtonChange = { isToggled = it },
         onError = { hasError = true },
-        onSuccess = { hasError = false}
+        onSuccess = { hasError = false }
     )
-
 
     val layout = remember {
         val screenSizeH = screenSize.h * 0.58f
@@ -127,11 +121,20 @@ fun ManageDeviceScreen(
             toggleWindowSize = toggleSize
         )
     }
+
     ToggleSystemBars()
 
     LaunchedEffect(Unit) {
         device?.let {
             deviceName = it.key
+        }
+    }
+
+    LaunchedEffect(connState) {
+        if (connState == BleConnectionState.Disconnected){
+            toggleDisconnectedPopup = true
+            delay(4000)
+            toggleDisconnectedPopup = false
         }
     }
 
@@ -191,9 +194,56 @@ fun ManageDeviceScreen(
         onRefresh = {
             hasError = false
             reloadKey++
-        }
-
+        },
+        onDisconnectRobot
     )
+
+    DisconnectedPopUp(
+        toggleDisconnectedPopup,
+        layout
+    )
+
+
+
+
+}
+
+@Composable
+fun DisconnectedPopUp(
+    toggle: Boolean,
+    layout: LayoutModel,
+    modifier: Modifier = Modifier
+){
+
+    AnimatedVisibility(
+        visible = toggle,
+        enter = slideInVertically(
+            initialOffsetY = { height -> -height},
+            animationSpec = tween(300)
+        ),
+        exit = slideOutVertically(
+            targetOffsetY = { height -> -height},
+            animationSpec = tween(300)
+
+        )
+
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = modifier
+                .background(Color.Red)
+                .fillMaxWidth()
+                .height(layout.padding)
+        ) {
+            Text(
+                "Disconnected",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White
+            )
+
+        }
+    }
+
 
 }
 
@@ -206,6 +256,7 @@ private fun ManageDeviceContent(
     toggle: Boolean,
     onToggleButtonChange: (Boolean) -> Unit,
     onRefresh: () -> Unit,
+    onDisconnectRobot: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
 
@@ -246,7 +297,8 @@ private fun ManageDeviceContent(
             onRefresh,
             onToggleButtonChange = {
                 localShowRobotController = it
-            }
+            },
+            onDisconnectRobot,
         )
 
         Box(
@@ -298,6 +350,7 @@ private fun ToggleControlConfig(
     localShowRobotController: Boolean,
     onRefresh: () -> Unit,
     onToggleButtonChange: (Boolean) -> Unit,
+    onDisconnectRobot: () -> Unit,
     modifier: Modifier = Modifier
 ) {
 
@@ -341,8 +394,7 @@ private fun ToggleControlConfig(
                 Row(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier.fillMaxWidth()
-                ){
-
+                ) {
 
 
                     Spacer(modifier = Modifier.weight(1f))
@@ -351,21 +403,23 @@ private fun ToggleControlConfig(
                         color = Color.White,
                     )
                     Spacer(modifier = Modifier.weight(1f))
-                    when{
+                    when {
                         isLoading -> {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(20.dp),
                                 color = Color.White,
                                 strokeWidth = 3.dp
                             )
-                        }else -> {
+                        }
+
+                        else -> {
                             Icon(
                                 painterResource(R.drawable.retry),
                                 contentDescription = null,
                                 tint = Color.White,
                                 modifier = modifier
                                     .size(20.dp)
-                                    .clickable{
+                                    .clickable {
                                         isLoading = true
                                         onRefresh()
                                         coroutineScope.launch {
@@ -374,7 +428,7 @@ private fun ToggleControlConfig(
                                         }
 
 
-                                }
+                                    }
                             )
 
                         }
@@ -392,6 +446,8 @@ private fun ToggleControlConfig(
                 )
                 WakeCycle()
                 CameraConfig()
+                Spacer(modifier.height(20.dp))
+                DisconnectRobot(viewModel, onDisconnectRobot)
 
 
             }
@@ -410,7 +466,6 @@ private fun ControlsConfig(
     onToggleButtonChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-
 
 
     Text(
@@ -508,6 +563,37 @@ private fun CameraConfig(
 }
 
 @Composable
+fun DisconnectRobot(
+    viewModel: MainViewContract,
+    onDisconnectRobot: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+
+        horizontalArrangement = Arrangement.Center,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Button(
+            onClick = {
+                viewModel.disconnectDevice()
+                onDisconnectRobot()
+
+            },
+            colors = ButtonDefaults.buttonColors(
+                backgroundColor = Color.Red,
+                contentColor = Color.White,
+
+                )
+        ) {
+            Text("Disconnect", color = Color.White)
+
+        }
+
+    }
+
+}
+
+@Composable
 fun ToggleSwitchElements(
     isSwitchEnabled: Boolean = false,
     onSwitchEnabled: (Boolean) -> Unit = { println("isSwitchToggled: $it") },
@@ -561,7 +647,7 @@ fun RobotControlLandMovement(
     ) {
         ControlButton(
             R.drawable.up,
-            "UP",
+            byteArrayOf(0x0A, 0x00, 0x00, 0x00),
             layout,
             viewModel,
             modifier.weight(1f),
@@ -573,14 +659,14 @@ fun RobotControlLandMovement(
         ) {
             ControlButton(
                 R.drawable.left,
-                "LEFT",
+                byteArrayOf(0x08, 0x00, 0x00, 0x00),
                 layout,
                 viewModel,
                 modifier.weight(1f),
             )
             ControlButton(
                 R.drawable.right,
-                "RIGHT",
+                byteArrayOf(0x07, 0x00, 0x00, 0x00),
                 layout,
                 viewModel,
                 modifier.weight(1f),
@@ -589,7 +675,7 @@ fun RobotControlLandMovement(
         }
         ControlButton(
             R.drawable.down,
-            "DOWN",
+            byteArrayOf(0x09, 0x00, 0x00, 0x00),
             layout,
             viewModel,
             modifier.weight(1f),
@@ -616,18 +702,40 @@ fun RobotControlCamera(
 
         ControlButton(
             R.drawable.up,
-            "Camera Up",
+            byteArrayOf(0x14, 0x00, 0x00, 0x00),
             layout,
             viewModel,
             modifier.weight(1f),
         )
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier
+                .width(layout.screenSizeW)
+        ) {
+            ControlButton(
+                R.drawable.left,
+                byteArrayOf(0x12, 0x00, 0x00, 0x00),
+                layout,
+                viewModel,
+                modifier.weight(1f),
+            )
+            ControlButton(
+                R.drawable.right,
+                byteArrayOf(0x11, 0x00, 0x00, 0x00),
+                layout,
+                viewModel,
+                modifier.weight(1f),
+            )
+
+        }
         ControlButton(
             R.drawable.down,
-            "Camera Down",
+            byteArrayOf(0x13, 0x00, 0x00, 0x00),
             layout,
             viewModel,
             modifier.weight(1f),
         )
+
 
     }
 
@@ -637,7 +745,7 @@ fun RobotControlCamera(
 @Composable
 private fun ControlButton(
     id: Int,
-    cmd: String,
+    cmd: ByteArray,
     layout: LayoutModel,
     viewModel: MainViewContract,
     modifier: Modifier = Modifier,
@@ -671,17 +779,13 @@ private fun ControlButton(
                 awaitPointerEventScope {
                     while (true) {
                         awaitFirstDown(requireUnconsumed = false)
-
                         isPressed = true
-                        val job = coroutineScope.launch {
-                            while (isActive) {
-                                viewModel.sendDataToBleDevice(cmd)
-                                delay(30)
-                            }
-                        }
+
+                        viewModel.sendDataToBleDevice(cmd)
+
 
                         waitForUpOrCancellation()
-                        job.cancel()
+                        viewModel.sendDataToBleDevice(byteArrayOf(0x00, 0x00, 0x00, 0x00)) //
                         isPressed = false
                     }
                 }
@@ -701,11 +805,10 @@ private fun getWebViewObject(
 ): WebView {
 
 
-
     return object : WebView(context) {
         override fun onTouchEvent(event: MotionEvent?): Boolean {
             onToggleButtonChange(false)
-            return super.onTouchEvent(event)
+            return true
         }
 
     }.apply {
@@ -725,7 +828,7 @@ private fun getWebViewObject(
                 error: WebResourceError?
             ) {
                 super.onReceivedError(view, request, error)
-                println(" Error: $error" )
+                println(" Error: $error")
                 onError()
 
             }

@@ -6,6 +6,11 @@ import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
 @HiltAndroidApp
-class CRobotControllerApp: Application()
+class CRobotControllerApp: Application(){
+    companion object {
+        const val LOCAL_MODE = "local_mode"
+        const val GLOBAL_MODE = "global_mode"
+    }
+}
 
 

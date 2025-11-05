@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "271276735063",
+    "firebase_url": "https://crobot-controller-plus-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "crobot-controller-plus",
+    "storage_bucket": "crobot-controller-plus.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:271276735063:android:930a035b4e3f0b6a410112",
+        "android_client_info": {
+          "package_name": "clentlogic.cloy.crobotcontroller"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBEqWZgkwNyLCbKPBcZMhVHNNaJGvJeCaI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

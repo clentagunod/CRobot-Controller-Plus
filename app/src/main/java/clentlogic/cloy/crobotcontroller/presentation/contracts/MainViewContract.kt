@@ -19,13 +19,14 @@ interface MainViewContract {
     val scanningState: StateFlow<ScanningState>
     val permissionFlow: Flow<Boolean>
     val toggleControlButtonFlow: Flow<Boolean>
+    val controlModeFlow: Flow<String>
 
     suspend fun startScanning(wait: Long)
     fun stopScan()
     fun connectToDevice(device: BluetoothDevice)
     fun disconnectDevice()
 
-    fun sendDataToBleDevice(data: String)
+    fun sendDataToBleDevice(data: ByteArray)
     fun addCommand(cmdModel: CmdModel)
     fun deleteCommand(cmdModel: CmdModel)
 
@@ -33,6 +34,8 @@ interface MainViewContract {
 
     fun setPermission(isPermitted: Boolean)
     fun setToggleControlButtonState(isToggled: Boolean)
+    fun setControlModeState(setMode: String)
+
 
 
 }

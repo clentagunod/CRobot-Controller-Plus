@@ -6,26 +6,29 @@ import androidx.room.Room
 import clentlogic.cloy.crobotcontroller.data.communication.ble.BleHelper
 import clentlogic.cloy.crobotcontroller.data.local.roomdb.dao.CmdDao
 import clentlogic.cloy.crobotcontroller.data.local.roomdb.db.CmdDatabase
-import clentlogic.cloy.crobotcontroller.domain.repository.BleRepository
+import clentlogic.cloy.crobotcontroller.data.remote.fb.FirebaseHelper
+import clentlogic.cloy.crobotcontroller.domain.repository.RobotControllerRepository
 import clentlogic.cloy.crobotcontroller.domain.repository.CmdRepository
 import clentlogic.cloy.crobotcontroller.domain.repository.DataStoreRepository
-import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.ConnectBleDevice
-import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.DisconnectBleDevice
-import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.SendDataToBle
-import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.dataflow.GetDeviceDataFlow
-import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.StartScan
-import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.StopScanning
-import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.dataflow.GetBluetoothStateFlow
-import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.dataflow.GetConnectionStateFlow
-import clentlogic.cloy.crobotcontroller.domain.usecase.ble_usecase.dataflow.GetScanningStateFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.ConnectRobot
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.DisconnectRobot
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.SendDataToRobot
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetDeviceDataFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.StartScan
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.StopScanning
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetBluetoothStateFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetConnectionStateFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetScanningStateFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.AddCmd
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.DeleteCmd
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.GetAllCmd
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.UpdateCmd
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetControlMode
 import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetPermissionState
 import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetToggleButtonState
-import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.dataflow.GetPermissionsDataFlow
-import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.dataflow.GetToggleButtonControlDataFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.dataflow.GetControlModeDataFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.dataflow.GetPermissionsDataFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.dataflow.GetToggleButtonControlDataFlow
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -72,44 +75,44 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideStartScanning(repository: BleRepository): StartScan = StartScan(repository)
+    fun provideStartScanning(repository: RobotControllerRepository): StartScan = StartScan(repository)
 
     @Provides
     @Singleton
-    fun provideStopScanning(repository: BleRepository): StopScanning = StopScanning(repository)
+    fun provideStopScanning(repository: RobotControllerRepository): StopScanning = StopScanning(repository)
 
     @Provides
     @Singleton
-    fun provideConnectBleDevice(repository: BleRepository): ConnectBleDevice = ConnectBleDevice(repository)
+    fun provideConnectBleDevice(repository: RobotControllerRepository): ConnectRobot = ConnectRobot(repository)
 
     @Provides
     @Singleton
-    fun provideGetDisconnectBleDevice(repository: BleRepository): DisconnectBleDevice =
-        DisconnectBleDevice(repository)
+    fun provideGetDisconnectBleDevice(repository: RobotControllerRepository): DisconnectRobot =
+        DisconnectRobot(repository)
 
 
     @Provides
     @Singleton
-    fun provideSendDataToBle(repository: BleRepository): SendDataToBle = SendDataToBle(repository)
+    fun provideSendDataToBle(repository: RobotControllerRepository): SendDataToRobot = SendDataToRobot(repository)
 
     @Provides
     @Singleton
-    fun provideGetDeviceDataFlow(repository: BleRepository): GetDeviceDataFlow =
+    fun provideGetDeviceDataFlow(repository: RobotControllerRepository): GetDeviceDataFlow =
         GetDeviceDataFlow(repository)
 
     @Provides
     @Singleton
-    fun provideGetConnectionStateFlow(repository: BleRepository): GetConnectionStateFlow =
+    fun provideGetConnectionStateFlow(repository: RobotControllerRepository): GetConnectionStateFlow =
         GetConnectionStateFlow(repository)
 
     @Provides
     @Singleton
-    fun provideGetBluetoothStateFlow(repository: BleRepository): GetBluetoothStateFlow =
+    fun provideGetBluetoothStateFlow(repository: RobotControllerRepository): GetBluetoothStateFlow =
         GetBluetoothStateFlow(repository)
 
     @Provides
     @Singleton
-    fun provideGetScanningStateFlow(repository: BleRepository): GetScanningStateFlow =
+    fun provideGetScanningStateFlow(repository: RobotControllerRepository): GetScanningStateFlow =
         GetScanningStateFlow(repository)
 
 
@@ -135,9 +138,23 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideSeToggleButtonState(repository: DataStoreRepository): SetToggleButtonState =
+    fun provideSetToggleButtonState(repository: DataStoreRepository): SetToggleButtonState =
         SetToggleButtonState(repository)
 
+
+    @Provides
+    @Singleton
+    fun provideGetControlModeState(repository: DataStoreRepository): GetControlModeDataFlow =
+        GetControlModeDataFlow(repository)
+
+    @Provides
+    @Singleton
+    fun provideSetControlMode(repository: DataStoreRepository): SetControlMode =
+        SetControlMode(repository)
+
+    @Provides
+    @Singleton
+    fun provideFirebaseHelper(): FirebaseHelper = FirebaseHelper()
 
 
 

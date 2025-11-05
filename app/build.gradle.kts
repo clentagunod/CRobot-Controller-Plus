@@ -5,6 +5,8 @@ plugins {
 
     id("com.google.dagger.hilt.android")
     id("kotlin-kapt")
+    id("com.google.gms.google-services")
+
 }
 
 android {
@@ -12,7 +14,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "clentlogic.cloy.homecontrollerplus"
+        applicationId = "clentlogic.cloy.crobotcontroller"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
@@ -62,26 +64,31 @@ dependencies {
 
 
 
-    implementation("com.google.dagger:hilt-android:2.51.1")
-    kapt("com.google.dagger:hilt-compiler:2.51.1")
+    implementation("com.google.dagger:hilt-android:2.57.2")
+    kapt("com.google.dagger:hilt-compiler:2.57.2")
     implementation("androidx.hilt:hilt-navigation-compose:1.1.0-alpha01")
 
-    implementation("androidx.room:room-runtime:2.8.1")
-    kapt("androidx.room:room-compiler:2.8.1")
-    implementation("androidx.room:room-ktx:2.8.1")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")
+    implementation("androidx.room:room-runtime:2.8.3")
+    kapt("androidx.room:room-compiler:2.8.3")
+    implementation("androidx.room:room-ktx:2.8.3")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.4")
 
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.4")
 
-    implementation("androidx.navigation:navigation-compose:2.8.3")
+    implementation("androidx.navigation:navigation-compose:2.9.5")
 
-    implementation("com.valentinilk.shimmer:compose-shimmer:1.3.1")
+    implementation("com.valentinilk.shimmer:compose-shimmer:1.3.3")
 
-    implementation("com.airbnb.android:lottie-compose:6.1.0")
+    implementation("com.airbnb.android:lottie-compose:6.7.1")
 
-    implementation("androidx.datastore:datastore-preferences:1.1.0")
+    implementation("androidx.datastore:datastore-preferences:1.1.7")
 
     implementation("androidx.compose.material:material:1.5.4")
+
+    implementation(platform("com.google.firebase:firebase-bom:34.5.0"))
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-database")
+
 
 
 

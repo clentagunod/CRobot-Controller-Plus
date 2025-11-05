@@ -17,10 +17,10 @@ import androidx.navigation.compose.rememberNavController
 import clentlogic.cloy.crobotcontroller.R
 import clentlogic.cloy.crobotcontroller.data.communication.ble.BlePermissionHandler
 import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
-import clentlogic.cloy.crobotcontroller.presentation.ui.activity.MainCompose
 import clentlogic.cloy.crobotcontroller.presentation.ui.components.AnimatedLottieJson
 import clentlogic.cloy.crobotcontroller.presentation.ui.components.splash.SplashLoadingScreen
 import clentlogic.cloy.crobotcontroller.presentation.ui.screen.CheckPermissionCompose
+import clentlogic.cloy.crobotcontroller.presentation.ui.screen.HomeScreen
 import clentlogic.cloy.crobotcontroller.presentation.ui.screen.ManageDeviceScreen
 import clentlogic.cloy.crobotcontroller.presentation.ui.screen.SettingsScreen
 import clentlogic.cloy.crobotcontroller.presentation.ui.util.LandscapeCompose
@@ -80,7 +80,7 @@ fun AppNavHost(
         navigation(startDestination = "main", route = "main_graph") {
             composable("main") { backStackEntry ->
 
-                MainCompose(
+                HomeScreen(
                     viewModel,
                     blePermissionHandler,
                     onOpenSettings = {
@@ -102,14 +102,18 @@ fun AppNavHost(
             composable("manage_device") { backStackEntry ->
                 LandscapeCompose {
                     ManageDeviceScreen(
-                        viewModel
+                        viewModel,
+                        onDisconnectRobot = {
+                            navController.popBackStack()
+
+                        }
                     )
 
                 }
 
             }
             composable("settings_screen") {
-                SettingsScreen()
+                SettingsScreen(viewModel)
             }
 
 
