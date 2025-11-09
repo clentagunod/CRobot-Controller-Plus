@@ -11,7 +11,8 @@ import kotlinx.coroutines.flow.StateFlow
 
 interface MainViewContract {
 
-    val selectedDevice: StateFlow<Map.Entry<String, BluetoothDevice>?>
+    val selectedDeviceLocal: StateFlow<Map.Entry<String, BluetoothDevice>?>
+    val selectedDeviceGlobal: StateFlow<Map.Entry<String, String>?>
     val cmd: StateFlow<List<CmdModel>>
     val connectionState: StateFlow<BleConnectionState>
     val device: StateFlow<Map<String, BluetoothDevice>>
@@ -20,6 +21,8 @@ interface MainViewContract {
     val permissionFlow: Flow<Boolean>
     val toggleControlButtonFlow: Flow<Boolean>
     val controlModeFlow: Flow<String>
+
+    val deviceConnectionStateGlobal: MutableStateFlow<Map<String, Boolean>>
 
     suspend fun startScanning(wait: Long)
     fun stopScan()
@@ -31,6 +34,7 @@ interface MainViewContract {
     fun deleteCommand(cmdModel: CmdModel)
 
     fun selectBleDevice(device: Map.Entry<String, BluetoothDevice>)
+    fun selectDevice(device: Map.Entry<String, String>)
 
     fun setPermission(isPermitted: Boolean)
     fun setToggleControlButtonState(isToggled: Boolean)

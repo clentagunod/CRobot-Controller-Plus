@@ -14,14 +14,16 @@ import kotlinx.coroutines.flow.flowOf
 
 class FakeViewModel: MainViewContract {
     override val cmd: StateFlow<List<CmdModel>> = MutableStateFlow(emptyList())
+    override val selectedDeviceGlobal: StateFlow<Map.Entry<String, String>?> = MutableStateFlow(null)
     override val connectionState: StateFlow<BleConnectionState> = MutableStateFlow(BleConnectionState.Connected)
     override val device: StateFlow<Map<String, BluetoothDevice>> = MutableStateFlow(emptyMap())
     override val bluetoothState: StateFlow<BluetoothState> = MutableStateFlow(BluetoothState.BluetoothDisabled)
     override val scanningState: StateFlow<ScanningState> = MutableStateFlow(ScanningState.Scanning)
-    override val selectedDevice: StateFlow<Map.Entry<String, BluetoothDevice>?> = MutableStateFlow(null)
+    override val selectedDeviceLocal: StateFlow<Map.Entry<String, BluetoothDevice>?> = MutableStateFlow(null)
     override val permissionFlow: Flow<Boolean> = flowOf(false)
     override val toggleControlButtonFlow: Flow<Boolean> = flowOf(false)
     override val controlModeFlow: Flow<String> = flowOf(LOCAL_MODE)
+    override val deviceConnectionStateGlobal = MutableStateFlow<Map<String, Boolean>>(emptyMap())
 
     override suspend fun startScanning(wait: Long) = Unit
     override fun stopScan() = Unit
@@ -31,6 +33,8 @@ class FakeViewModel: MainViewContract {
     override fun addCommand(cmdModel: CmdModel) = Unit
     override fun deleteCommand(cmdModel: CmdModel) = Unit
     override fun selectBleDevice(device: Map.Entry<String, BluetoothDevice>) = Unit
+    override fun selectDevice(device: Map.Entry<String, String>) = Unit
+
     override fun setPermission(isPermitted: Boolean) = Unit
     override fun setToggleControlButtonState(isPermitted: Boolean) = Unit
     override fun setControlModeState(setMode: String) = Unit

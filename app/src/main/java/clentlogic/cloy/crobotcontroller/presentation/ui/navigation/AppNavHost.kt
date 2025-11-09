@@ -87,8 +87,12 @@ fun AppNavHost(
                         navController.navigate("settings_screen")
 
                     },
-                    onOpenDevice = {
+                    onOpenDeviceLocal = {
                         viewModel.selectBleDevice(it)
+                        navController.navigate("splash")
+                    },
+                    onOpenDeviceGlobal = {
+                        viewModel.selectDevice(it)
                         navController.navigate("splash")
                     }
                 )

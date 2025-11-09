@@ -1,8 +1,8 @@
 package clentlogic.cloy.crobotcontroller.data.mapper
 
-import clentlogic.cloy.crobotcontroller.data.local.roomdb.entity.CmdEntity
+import clentlogic.cloy.crobotcontroller.data.local.roomdb.entity.RobotEntity
 import clentlogic.cloy.crobotcontroller.domain.model.CmdModel
 
 
-fun CmdEntity.toDomain(): CmdModel = CmdModel(id = id, cmd = cmd, value = value)
-fun CmdModel.toEntity(): CmdEntity= CmdEntity(id = id, cmd = cmd, value = value)
+fun RobotEntity.toDomain(): CmdModel = CmdModel(id = id, cmd = cmd, value = value)
+fun CmdModel.toEntity(): RobotEntity= RobotEntity(id = id, cmd = cmd, value = value)

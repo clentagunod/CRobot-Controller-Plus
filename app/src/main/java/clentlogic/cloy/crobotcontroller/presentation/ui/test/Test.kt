@@ -1,5 +1,6 @@
 package clentlogic.cloy.crobotcontroller.presentation.ui.test
 
+import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,54 +23,17 @@ import clentlogic.cloy.crobotcontroller.CRobotControllerApp.Companion.GLOBAL_MOD
 import clentlogic.cloy.crobotcontroller.CRobotControllerApp.Companion.LOCAL_MODE
 import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
 import clentlogic.cloy.crobotcontroller.presentation.viewmodel.MainViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 
 @Composable
 fun TestCompose(
-    viewModel: MainViewContract = hiltViewModel<MainViewModel>()
+
 ) {
 
-    val controlModes by remember { mutableStateOf(listOf(LOCAL_MODE, GLOBAL_MODE)) }
 
-    val currentMode by viewModel.controlModeFlow.collectAsState(LOCAL_MODE)
-
-
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier.fillMaxSize()
-    ) {
-        Column(
-            modifier = Modifier.selectableGroup()
-        ) {
-
-            controlModes.forEach { mode ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .selectable(
-                            selected = (mode == currentMode),
-                            onClick = { viewModel.setControlModeState(mode) }
-                        )
-
-                ) {
-                    RadioButton(
-                        selected = (mode == currentMode),
-                        onClick = null
-                    )
-                    Text(
-                        text = mode
-                    )
-
-                }
-
-            }
-
-
-        }
-
-
-    }
 
 }
 

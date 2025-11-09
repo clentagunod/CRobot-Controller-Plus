@@ -7,10 +7,13 @@ import android.content.IntentFilter
 import android.net.NetworkInfo
 import android.net.wifi.WifiManager
 import android.util.Log
+import clentlogic.cloy.crobotcontroller.domain.model.WifiState
 
 class WifiHelper(
     private val context: Context
 ) {
+
+    var onWifiStateChange: ((WifiState) -> Unit)? = null
 
     private val wifiStateChangedListener = object: BroadcastReceiver(){
         override fun onReceive(p0: Context?, p1: Intent?) {
@@ -25,10 +28,11 @@ class WifiHelper(
 
                     when(wifiState){
                         WifiManager.WIFI_STATE_ENABLED ->  {
-                            Log.d("Wifi State", "Wifi Enabled")
+                            onWifiStateChange?.invoke(WifiState.WifiOn)
+
                         }
                         WifiManager.WIFI_STATE_DISABLED -> {
-                            Log.d("Wifi State", "Wifi Disabled")
+                            onWifiStateChange?.invoke(WifiState.WifiOff)
                         }
                     }
                 }

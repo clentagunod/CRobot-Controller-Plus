@@ -3,14 +3,16 @@ package clentlogic.cloy.crobotcontroller.data.repository
 import android.bluetooth.BluetoothDevice
 import android.content.Context
 import android.util.Log
-import clentlogic.cloy.crobotcontroller.CRobotControllerApp.Companion.GLOBAL_MODE
 import clentlogic.cloy.crobotcontroller.CRobotControllerApp.Companion.LOCAL_MODE
 import clentlogic.cloy.crobotcontroller.data.communication.ble.BleHelper
+import clentlogic.cloy.crobotcontroller.data.communication.wifi.WifiHelper
 import clentlogic.cloy.crobotcontroller.data.local.datastore.observeControlModeState
-import clentlogic.cloy.crobotcontroller.data.remote.fb.FirebaseHelper
+import clentlogic.cloy.crobotcontroller.data.remote.firebase.FirebaseRealtimeDbHelper
 import clentlogic.cloy.crobotcontroller.domain.model.BleConnectionState
 import clentlogic.cloy.crobotcontroller.domain.model.BluetoothState
+import clentlogic.cloy.crobotcontroller.domain.model.RemoteConnectionStatusModel
 import clentlogic.cloy.crobotcontroller.domain.model.ScanningState
+import clentlogic.cloy.crobotcontroller.domain.model.WifiState
 import clentlogic.cloy.crobotcontroller.domain.repository.RobotControllerRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -24,12 +26,14 @@ import javax.inject.Inject
 class RobotControllerRepositoryImpl @Inject constructor(
     @ApplicationContext app: Context,
     private val bleHelper: BleHelper,
-    private val firebaseHelper: FirebaseHelper,
+    private val wifiHelper: WifiHelper,
+    private val firebaseHelper: FirebaseRealtimeDbHelper,
 ): RobotControllerRepository {
 
     private val controlMode = app.observeControlModeState()
     private var currentMode = LOCAL_MODE
 
+    // Local Mode
     private val _deviceDataFlow = MutableStateFlow<Map<String, BluetoothDevice>>(emptyMap())
     override val deviceDataFlow: MutableStateFlow<Map<String, BluetoothDevice>> = _deviceDataFlow
 
@@ -42,6 +46,14 @@ class RobotControllerRepositoryImpl @Inject constructor(
     private val _scanningState = MutableStateFlow<ScanningState>(ScanningState.ScanningFinished)
     override val scanningState: MutableStateFlow<ScanningState> = _scanningState
 
+    // Global Mode
+    private val _remoteConnectionState = MutableStateFlow<RemoteConnectionStatusModel>(
+        RemoteConnectionStatusModel.Offline)
+    override val remoteConnectionState: MutableStateFlow<RemoteConnectionStatusModel> = _remoteConnectionState
+
+    private val _deviceConnectionStateGlobal = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+    override val deviceConnectionStateGlobal: MutableStateFlow<Map<String, Boolean>> = _deviceConnectionStateGlobal
+
 
 
     init {
@@ -49,16 +61,26 @@ class RobotControllerRepositoryImpl @Inject constructor(
         CoroutineScope(Dispatchers.IO).launch {
             controlMode.collect {
                 currentMode = it
-                if (currentMode == LOCAL_MODE) firebaseHelper.stopRealtimeListener() else firebaseHelper.realtimeListener()
+                if (currentMode == LOCAL_MODE){
+                    firebaseHelper.stopRealtimeListener()
+                } else{
+                    bleHelper.disconnectBle()
+                    firebaseHelper.realtimeListener()
+                    firebaseHelper.signIn()
+                }
                 Log.d("BleImpl", "Current Mode: $it, CurrentModeFromController: $currentMode")
 
             }
 
         }
 
+        wifiHelper.onWifiStateChange = {
 
-        firebaseHelper.onChildRead = {
-            println("Data: $it")
+        }
+
+        firebaseHelper.onDeviceConnectionState = {
+            _deviceConnectionStateGlobal.value = it
+
         }
 
 

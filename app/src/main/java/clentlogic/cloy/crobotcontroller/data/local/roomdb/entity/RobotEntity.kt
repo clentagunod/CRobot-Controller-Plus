@@ -4,8 +4,8 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 
-@Entity("commands")
-data class CmdEntity(
+@Entity("robots")
+data class RobotEntity(
     @PrimaryKey val id: Int,
     val cmd: String,
     val value: Int,

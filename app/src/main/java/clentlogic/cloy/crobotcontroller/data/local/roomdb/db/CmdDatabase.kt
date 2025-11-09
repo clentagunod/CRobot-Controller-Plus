@@ -2,10 +2,10 @@ package clentlogic.cloy.crobotcontroller.data.local.roomdb.db
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
-import clentlogic.cloy.crobotcontroller.data.local.roomdb.dao.CmdDao
-import clentlogic.cloy.crobotcontroller.data.local.roomdb.entity.CmdEntity
+import clentlogic.cloy.crobotcontroller.data.local.roomdb.dao.RobotDao
+import clentlogic.cloy.crobotcontroller.data.local.roomdb.entity.RobotEntity
 
-@Database([CmdEntity::class], version = 1, exportSchema = false)
+@Database([RobotEntity::class], version = 1, exportSchema = false)
 abstract class CmdDatabase: RoomDatabase() {
-    abstract fun cmdDao(): CmdDao
+    abstract fun cmdDao(): RobotDao
 }

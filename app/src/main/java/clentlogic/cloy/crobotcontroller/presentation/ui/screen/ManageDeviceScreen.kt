@@ -64,6 +64,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import clentlogic.cloy.crobotcontroller.CRobotControllerApp
+import clentlogic.cloy.crobotcontroller.CRobotControllerApp.Companion.GLOBAL_MODE
+import clentlogic.cloy.crobotcontroller.CRobotControllerApp.Companion.LOCAL_MODE
 import clentlogic.cloy.crobotcontroller.R
 import clentlogic.cloy.crobotcontroller.domain.model.BleConnectionState
 import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
@@ -84,6 +87,7 @@ fun ManageDeviceScreen(
     viewModel: MainViewContract,
     onDisconnectRobot: () -> Unit,
 ) {
+    val controlMode by viewModel.controlModeFlow.collectAsState(LOCAL_MODE)
 
     val connState by viewModel.connectionState.collectAsState()
     var toggleDisconnectedPopup by remember { mutableStateOf(false) }
@@ -91,7 +95,9 @@ fun ManageDeviceScreen(
     val context = LocalContext.current
     val screenSize = getScreenSize()
 
-    val device by viewModel.selectedDevice.collectAsState()
+
+    val deviceNameLocal by viewModel.selectedDeviceLocal.collectAsState()
+    val deviceNameGlobal by viewModel.selectedDeviceGlobal.collectAsState()
     var deviceName by remember { mutableStateOf("No Device") }
 
     var hasError by remember { mutableStateOf(false) }
@@ -125,8 +131,18 @@ fun ManageDeviceScreen(
     ToggleSystemBars()
 
     LaunchedEffect(Unit) {
-        device?.let {
-            deviceName = it.key
+        when (controlMode) {
+            LOCAL_MODE -> {
+                deviceNameLocal?.let {
+                    deviceName = it.key
+                }
+            }
+            GLOBAL_MODE -> {
+                deviceNameGlobal?.let {
+                    deviceName = it.key
+                }
+            }
+            else -> {}
         }
     }
 
@@ -143,6 +159,7 @@ fun ManageDeviceScreen(
             factory = {
                 webView.apply {
                     loadUrl("https://cam.ccontroller.online/")
+
                 }
             },
             modifier = Modifier.fillMaxSize()
@@ -184,6 +201,7 @@ fun ManageDeviceScreen(
     }
 
     ManageDeviceContent(
+        webView,
         layout,
         viewModel,
         deviceName,
@@ -250,6 +268,7 @@ fun DisconnectedPopUp(
 
 @Composable
 private fun ManageDeviceContent(
+    webView: WebView,
     layout: LayoutModel,
     viewModel: MainViewContract,
     deviceName: String,
@@ -289,6 +308,7 @@ private fun ManageDeviceContent(
 
 
         ToggleControlConfig(
+            webView,
             viewModel,
             layout,
             toggle,
@@ -343,6 +363,7 @@ private fun ManageDeviceContent(
 
 @Composable
 private fun ToggleControlConfig(
+    webView: WebView,
     viewModel: MainViewContract,
     layout: LayoutModel,
     toggle: Boolean,
@@ -447,7 +468,7 @@ private fun ToggleControlConfig(
                 WakeCycle()
                 CameraConfig()
                 Spacer(modifier.height(20.dp))
-                DisconnectRobot(viewModel, onDisconnectRobot)
+                DisconnectRobot(viewModel, onDisconnectRobot, webView)
 
 
             }
@@ -566,6 +587,7 @@ private fun CameraConfig(
 fun DisconnectRobot(
     viewModel: MainViewContract,
     onDisconnectRobot: () -> Unit,
+    webView: WebView,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -575,6 +597,12 @@ fun DisconnectRobot(
     ) {
         Button(
             onClick = {
+                webView.apply {
+                    stopLoading()
+                    removeAllViews()
+                    destroy()
+
+                }
                 viewModel.disconnectDevice()
                 onDisconnectRobot()
 

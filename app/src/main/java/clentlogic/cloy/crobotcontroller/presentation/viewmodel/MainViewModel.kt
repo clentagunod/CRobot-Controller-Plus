@@ -3,6 +3,7 @@ package clentlogic.cloy.crobotcontroller.presentation.viewmodel
 import android.bluetooth.BluetoothDevice
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import clentlogic.cloy.crobotcontroller.domain.model.BluetoothState
 import clentlogic.cloy.crobotcontroller.domain.model.CmdModel
 import clentlogic.cloy.crobotcontroller.domain.repository.RobotControllerRepository
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.ConnectRobot
@@ -23,10 +24,12 @@ import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetToggleButto
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.dataflow.GetControlModeDataFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.dataflow.GetPermissionsDataFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.dataflow.GetToggleButtonControlDataFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetDeviceConnectionStateGlobal
 import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flowOn
@@ -55,13 +58,18 @@ class MainViewModel @Inject constructor(
     private val setToggleButtonState: SetToggleButtonState,
     private val getControlModeDataFlow: GetControlModeDataFlow,
     private val setControlMode: SetControlMode,
+    private val getDeviceConnectionStateGlobal: GetDeviceConnectionStateGlobal,
 
 
-    ) : ViewModel(), MainViewContract {
+
+) : ViewModel(), MainViewContract {
 
 
     private val _selectedDevice = MutableStateFlow<Map.Entry<String, BluetoothDevice>?>(null)
-    override val selectedDevice: StateFlow<Map.Entry<String, BluetoothDevice>?> = _selectedDevice
+    override val selectedDeviceLocal: StateFlow<Map.Entry<String, BluetoothDevice>?> = _selectedDevice
+
+    private val _selectedDeviceGlobal = MutableStateFlow<Map.Entry<String, String>?>(null)
+    override val selectedDeviceGlobal: StateFlow<Map.Entry<String, String>?> = _selectedDeviceGlobal
 
     private val _cmd = MutableStateFlow<List<CmdModel>>(emptyList())
     override val cmd: StateFlow<List<CmdModel>> = _cmd
@@ -78,10 +86,18 @@ class MainViewModel @Inject constructor(
     override val toggleControlButtonFlow = getToggleButtonControlDataFlow()
     override val controlModeFlow = getControlModeDataFlow()
 
+    override val deviceConnectionStateGlobal = getDeviceConnectionStateGlobal()
+
+    var bluetoothIsOn = false
+
 
     init {
         loadCmd()
-        autoScan()
+        bluetoothStatus()
+        if (bluetoothIsOn){
+            autoScan()
+        }
+
     }
 
 
@@ -94,6 +110,17 @@ class MainViewModel @Inject constructor(
                 delay(randomDelay)
             }
         }
+    }
+
+    private fun bluetoothStatus(){
+        viewModelScope.launch {
+            bluetoothState.collect { bluetoothState ->
+                bluetoothIsOn = bluetoothState == BluetoothState.BluetoothEnabled
+            }
+
+        }
+
+
     }
 
 
@@ -124,7 +151,10 @@ class MainViewModel @Inject constructor(
 
     override fun selectBleDevice(device: Map.Entry<String, BluetoothDevice>) {
         _selectedDevice.value = device
+    }
 
+    override fun selectDevice(device: Map.Entry<String, String>) {
+        _selectedDeviceGlobal.value = device
     }
 
     override suspend fun startScanning(wait: Long) = startScan(wait)

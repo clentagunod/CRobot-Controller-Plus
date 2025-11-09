@@ -4,9 +4,10 @@ import android.app.Application
 import android.content.Context
 import androidx.room.Room
 import clentlogic.cloy.crobotcontroller.data.communication.ble.BleHelper
-import clentlogic.cloy.crobotcontroller.data.local.roomdb.dao.CmdDao
+import clentlogic.cloy.crobotcontroller.data.communication.wifi.WifiHelper
+import clentlogic.cloy.crobotcontroller.data.local.roomdb.dao.RobotDao
 import clentlogic.cloy.crobotcontroller.data.local.roomdb.db.CmdDatabase
-import clentlogic.cloy.crobotcontroller.data.remote.fb.FirebaseHelper
+import clentlogic.cloy.crobotcontroller.data.remote.firebase.FirebaseRealtimeDbHelper
 import clentlogic.cloy.crobotcontroller.domain.repository.RobotControllerRepository
 import clentlogic.cloy.crobotcontroller.domain.repository.CmdRepository
 import clentlogic.cloy.crobotcontroller.domain.repository.DataStoreRepository
@@ -29,6 +30,7 @@ import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetToggleButto
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.dataflow.GetControlModeDataFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.dataflow.GetPermissionsDataFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.dataflow.GetToggleButtonControlDataFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetDeviceConnectionStateGlobal
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -50,7 +52,7 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideDao(db: CmdDatabase): CmdDao = db.cmdDao()
+    fun provideDao(db: CmdDatabase): RobotDao = db.cmdDao()
 
     @Provides
     @Singleton
@@ -72,6 +74,10 @@ object AppModule {
     @Provides
     @Singleton
     fun provideBleHelper(@ApplicationContext context: Context): BleHelper = BleHelper(context)
+
+    @Provides
+    @Singleton
+    fun provideWifiHelper(@ApplicationContext context: Context): WifiHelper = WifiHelper(context)
 
     @Provides
     @Singleton
@@ -154,7 +160,14 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideFirebaseHelper(): FirebaseHelper = FirebaseHelper()
+    fun provideFirebaseHelper(): FirebaseRealtimeDbHelper = FirebaseRealtimeDbHelper()
+
+    @Provides
+    @Singleton
+    fun provideGetDeviceConnectionStateGlobal(repository: RobotControllerRepository): GetDeviceConnectionStateGlobal =
+        GetDeviceConnectionStateGlobal(repository)
+
+
 
 
 

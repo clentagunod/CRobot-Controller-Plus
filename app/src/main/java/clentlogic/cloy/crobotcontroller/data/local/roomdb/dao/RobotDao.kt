@@ -6,22 +6,22 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
-import clentlogic.cloy.crobotcontroller.data.local.roomdb.entity.CmdEntity
+import clentlogic.cloy.crobotcontroller.data.local.roomdb.entity.RobotEntity
 import kotlinx.coroutines.flow.Flow
 
 
 @Dao
-interface CmdDao {
+interface RobotDao {
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
-    suspend fun addCmd(cmd: CmdEntity)
+    suspend fun addRobot(cmd: RobotEntity)
 
-    @Query("SELECT * FROM commands")
-    fun getAllCmd(): Flow<List<CmdEntity>>
+    @Query("SELECT * FROM robots")
+    fun getAllRobots(): Flow<List<RobotEntity>>
 
     @Update(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun updateCmd(cmd: CmdEntity)
+    suspend fun updateRobot(cmd: RobotEntity)
 
     @Delete
-    suspend fun deleteCmd(cmd: CmdEntity)
+    suspend fun deleteRobot(cmd: RobotEntity)
 }
