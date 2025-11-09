@@ -1,5 +1,6 @@
 package clentlogic.cloy.crobotcontroller.presentation.ui.screen.subscreen.homescreen
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -23,9 +24,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -33,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,12 +50,13 @@ import clentlogic.cloy.crobotcontroller.CRobotControllerApp.Companion.LOCAL_MODE
 import clentlogic.cloy.crobotcontroller.R
 import clentlogic.cloy.crobotcontroller.domain.model.WifiConnectionState
 import clentlogic.cloy.crobotcontroller.domain.model.WifiState
-import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetWifiHasInternet
 import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
 import clentlogic.cloy.crobotcontroller.presentation.model.LayoutModel
 import clentlogic.cloy.crobotcontroller.presentation.model.ScreenSizeModel
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.DeepTeal
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.LimeGreen
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 
 @Composable
@@ -59,7 +64,7 @@ fun HomeContentGlobal(
     viewModel: MainViewContract,
     screenSize: ScreenSizeModel,
     onOpenSettings: () -> Unit,
-    onOpenDeviceGlobal: (Map.Entry<String, String>) -> Unit
+    onOpenDeviceGlobal: (Map.Entry<String, Boolean>) -> Unit
 
 ) {
     val currentControlMode by viewModel.controlModeFlow.collectAsState(LOCAL_MODE)
@@ -69,7 +74,13 @@ fun HomeContentGlobal(
     val wifiConnectionState by viewModel.wifiConnectionState.collectAsState()
     val wifiHasInternet by viewModel.wifiHasInternetConnection.collectAsState()
 
+    var topStatus by remember {  mutableStateOf("Offline")}
+    var robotNameStatus by remember { mutableStateOf("None") }
+
+
+
     TopStatusGlobal(
+        topStatus,
         screenSize,
         onOpenSettings
     )
@@ -77,6 +88,7 @@ fun HomeContentGlobal(
     RobotNameStatusGlobal(
         viewModel,
         screenSize,
+        robotNameStatus,
         currentControlMode,
     )
 
@@ -88,6 +100,12 @@ fun HomeContentGlobal(
         wifiConnectionState,
         wifiHasInternet,
         onOpenDeviceGlobal,
+        onChangeTopStatus = {
+            topStatus = it
+        },
+        onChangeRobotName = {
+            robotNameStatus = it
+        }
     )
 
 }
@@ -95,11 +113,11 @@ fun HomeContentGlobal(
 
 @Composable
 private fun TopStatusGlobal(
+    topStatus: String,
     screenSize: ScreenSizeModel,
     onOpenSettings: () -> Unit
 
 ) {
-
 
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -115,7 +133,13 @@ private fun TopStatusGlobal(
         LayoutModel(h, padding = padding, imgSize = imgSize)
     }
 
-
+    val textColor by animateColorAsState(
+        targetValue = when (topStatus) {
+            "Offline" -> Color.Red
+            "Online" -> Color.Green
+            else -> Color.White
+        }
+    )
 
     Row(
         verticalAlignment = Alignment.Bottom,
@@ -130,8 +154,8 @@ private fun TopStatusGlobal(
         Column {
 
             Text(
-                "Offline",
-                color = Color.White,
+                topStatus,
+                color = textColor,
                 style = MaterialTheme.typography.displayMedium
             )
 
@@ -166,6 +190,7 @@ private fun TopStatusGlobal(
 private fun RobotNameStatusGlobal(
     viewModel: MainViewContract,
     screenSize: ScreenSizeModel,
+    robotNameStatus: String,
     currentControlMode: String
 ) {
 
@@ -213,7 +238,7 @@ private fun RobotNameStatusGlobal(
             modifier = Modifier.align(Alignment.Center)
         ) {
             Text(
-                "C-Robot Crawler",
+                robotNameStatus,
                 color = Color.White,
                 style = MaterialTheme.typography.displayLarge,
 
@@ -260,7 +285,9 @@ private fun AvailableRobotFoundGlobal(
     wifiState: WifiState,
     wifiConnectionState: WifiConnectionState,
     wifiHasInternet: Boolean,
-    onOpenDeviceGlobal: (Map.Entry<String, String>) -> Unit
+    onOpenDeviceGlobal: (Map.Entry<String, Boolean>) -> Unit,
+    onChangeTopStatus: (String) -> Unit,
+    onChangeRobotName: (String) -> Unit,
 ) {
 
     var hasInternetConnectivity by remember { mutableStateOf(false) }
@@ -340,7 +367,9 @@ private fun AvailableRobotFoundGlobal(
                 layout,
                 viewModel,
                 isOnline,
-                onOpenDeviceGlobal
+                onOpenDeviceGlobal,
+                onChangeTopStatus,
+                onChangeRobotName,
             )
         } else {
             Box(
@@ -378,7 +407,9 @@ private fun RobotListGlobal(
     layout: LayoutModel,
     viewModel: MainViewContract,
     isOnline: Map<String, Boolean>,
-    onOpenDeviceGlobal: (Map.Entry<String, String>) -> Unit,
+    onOpenDeviceGlobal: (Map.Entry<String, Boolean>) -> Unit,
+    onChangeTopStatus: (String) -> Unit,
+    onChangeRobotName: (String) -> Unit,
 ) {
 
 
@@ -394,6 +425,9 @@ private fun RobotListGlobal(
             RobotListItemGlobal(
                 layout,
                 device,
+                onChangeTopStatus,
+                onChangeRobotName,
+                onOpenDeviceGlobal
             )
 
 
@@ -405,9 +439,23 @@ private fun RobotListGlobal(
 private fun RobotListItemGlobal(
     layout: LayoutModel,
     device: Map.Entry<String, Boolean>,
+    onChangeTopStatus: (String) -> Unit,
+    onChangeRobotName: (String) -> Unit,
+    onOpenDeviceGlobal: (Map.Entry<String, Boolean>) -> Unit
 
     ) {
     val shape = remember { RoundedCornerShape(layout.borderRadius) }
+    var isConnected by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
+
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(device.value, device.key) {
+        if (!device.value) {
+            onChangeTopStatus("Offline")
+        }
+
+    }
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -433,11 +481,53 @@ private fun RobotListItemGlobal(
         Spacer(Modifier.weight(1f))
 
         if (device.value) {
-            Text(
-                "Open",
-                style = MaterialTheme.typography.labelSmall,
+            when {
+                isConnected -> {
+                    TextButton(
+                        onClick = {
+                            onOpenDeviceGlobal(device)
+                        }
+                    ) {
+                        Text(
+                            "Open",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.Black
+                        )
 
-                )
+                    }
+
+                    onChangeRobotName(device.key)
+                    onChangeTopStatus("Online")
+                }
+                isLoading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(layout.imgSize),
+                        color = Color.White,
+                        strokeWidth = 3.dp
+                    )
+                    onChangeTopStatus("Linking")
+                }
+                else -> {
+                    Text(
+                        "Connect",
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.clickable{
+                            isLoading = true
+
+                            coroutineScope.launch {
+                                delay(3000)
+                                isLoading = false
+                                isConnected = true
+                            }
+                        }
+                    )
+
+
+                }
+
+            }
+
+
         }
 
 

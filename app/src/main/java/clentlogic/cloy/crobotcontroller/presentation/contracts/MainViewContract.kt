@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 interface MainViewContract {
 
     val selectedDeviceLocal: StateFlow<Map.Entry<String, BluetoothDevice>?>
-    val selectedDeviceGlobal: StateFlow<Map.Entry<String, String>?>
+    val selectedDeviceGlobal: StateFlow<Map.Entry<String, Boolean>?>
     val cmd: StateFlow<List<CmdModel>>
     val connectionState: StateFlow<BleConnectionState>
     val device: StateFlow<Map<String, BluetoothDevice>>
@@ -40,7 +40,7 @@ interface MainViewContract {
     fun deleteCommand(cmdModel: CmdModel)
 
     fun selectBleDevice(device: Map.Entry<String, BluetoothDevice>)
-    fun selectDevice(device: Map.Entry<String, String>)
+    fun selectDevice(device: Map.Entry<String, Boolean>)
 
     fun setPermission(isPermitted: Boolean)
     fun setToggleControlButtonState(isToggled: Boolean)

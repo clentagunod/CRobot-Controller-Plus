@@ -40,7 +40,7 @@ class FirebaseRealtimeDbHelper {
         valueEventListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val statusData: Boolean = snapshot.child("isOnline").value as Boolean
-                onDeviceConnectionState?.invoke(mapOf("C-Robot Crawler" to statusData))
+                onDeviceConnectionState?.invoke(mapOf("C-Robot Crawler" to statusData, ))
             }
 
             override fun onCancelled(error: DatabaseError) {

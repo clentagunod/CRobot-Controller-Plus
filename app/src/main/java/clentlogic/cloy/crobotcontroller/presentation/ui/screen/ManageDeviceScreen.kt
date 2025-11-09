@@ -69,6 +69,8 @@ import clentlogic.cloy.crobotcontroller.CRobotControllerApp.Companion.GLOBAL_MOD
 import clentlogic.cloy.crobotcontroller.CRobotControllerApp.Companion.LOCAL_MODE
 import clentlogic.cloy.crobotcontroller.R
 import clentlogic.cloy.crobotcontroller.domain.model.BleConnectionState
+import clentlogic.cloy.crobotcontroller.domain.model.WifiConnectionState
+import clentlogic.cloy.crobotcontroller.domain.model.WifiState
 import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
 import clentlogic.cloy.crobotcontroller.presentation.model.LayoutModel
 import clentlogic.cloy.crobotcontroller.presentation.ui.components.AnimatedLottieJson
@@ -89,8 +91,16 @@ fun ManageDeviceScreen(
 ) {
     val controlMode by viewModel.controlModeFlow.collectAsState(LOCAL_MODE)
 
+    val wifiStatus by viewModel.wifiState.collectAsState()
+    val wifiConnectionState by viewModel.wifiConnectionState.collectAsState()
+    val wifiHasInternet by viewModel.wifiHasInternetConnection.collectAsState()
+
     val connState by viewModel.connectionState.collectAsState()
     var toggleDisconnectedPopup by remember { mutableStateOf(false) }
+
+    var toggleDisconnectedPopupGlobal by remember { mutableStateOf(false) }
+
+
 
     val context = LocalContext.current
     val screenSize = getScreenSize()
@@ -130,7 +140,13 @@ fun ManageDeviceScreen(
 
     ToggleSystemBars()
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(wifiStatus, wifiConnectionState, wifiHasInternet) {
+        if (wifiStatus == WifiState.WifiOff) toggleDisconnectedPopupGlobal = true
+        if (wifiConnectionState == WifiConnectionState.WifiDisconnected) toggleDisconnectedPopupGlobal = true
+        if (!wifiHasInternet) toggleDisconnectedPopupGlobal = true
+    }
+
+    LaunchedEffect(controlMode) {
         when (controlMode) {
             LOCAL_MODE -> {
                 deviceNameLocal?.let {
@@ -216,10 +232,22 @@ fun ManageDeviceScreen(
         onDisconnectRobot
     )
 
-    DisconnectedPopUp(
-        toggleDisconnectedPopup,
-        layout
-    )
+    if(controlMode == LOCAL_MODE){
+        DisconnectedPopUp(
+            toggleDisconnectedPopup,
+            layout
+        )
+
+
+    }else {
+        DisconnectedPopUp(
+            toggleDisconnectedPopupGlobal,
+            layout
+        )
+
+    }
+
+
 
 
 

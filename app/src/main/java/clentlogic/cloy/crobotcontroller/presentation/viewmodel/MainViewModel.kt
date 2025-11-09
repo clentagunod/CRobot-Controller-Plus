@@ -72,8 +72,8 @@ class MainViewModel @Inject constructor(
     private val _selectedDevice = MutableStateFlow<Map.Entry<String, BluetoothDevice>?>(null)
     override val selectedDeviceLocal: StateFlow<Map.Entry<String, BluetoothDevice>?> = _selectedDevice
 
-    private val _selectedDeviceGlobal = MutableStateFlow<Map.Entry<String, String>?>(null)
-    override val selectedDeviceGlobal: StateFlow<Map.Entry<String, String>?> = _selectedDeviceGlobal
+    private val _selectedDeviceGlobal = MutableStateFlow<Map.Entry<String, Boolean>?>(null)
+    override val selectedDeviceGlobal: StateFlow<Map.Entry<String, Boolean>?> = _selectedDeviceGlobal
 
     private val _cmd = MutableStateFlow<List<CmdModel>>(emptyList())
     override val cmd: StateFlow<List<CmdModel>> = _cmd
@@ -160,7 +160,7 @@ class MainViewModel @Inject constructor(
         _selectedDevice.value = device
     }
 
-    override fun selectDevice(device: Map.Entry<String, String>) {
+    override fun selectDevice(device: Map.Entry<String, Boolean>) {
         _selectedDeviceGlobal.value = device
     }
 

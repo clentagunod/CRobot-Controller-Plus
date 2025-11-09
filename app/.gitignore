@@ -1,1 +1,12 @@
-/build
+/build/
+/app/build/
+
+/google-services.json
+app/google-services.json
+
+# Android Studio / Gradle
+/.gradle/
+/local.properties
+
+# System files
+.DS_Store
