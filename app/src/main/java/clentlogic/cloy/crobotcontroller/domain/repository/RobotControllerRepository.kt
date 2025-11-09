@@ -1,10 +1,12 @@
 package clentlogic.cloy.crobotcontroller.domain.repository
 
 import android.bluetooth.BluetoothDevice
+import androidx.compose.runtime.collection.MutableVector
 import clentlogic.cloy.crobotcontroller.domain.model.BleConnectionState
 import clentlogic.cloy.crobotcontroller.domain.model.BluetoothState
 import clentlogic.cloy.crobotcontroller.domain.model.RemoteConnectionStatusModel
 import clentlogic.cloy.crobotcontroller.domain.model.ScanningState
+import clentlogic.cloy.crobotcontroller.domain.model.WifiConnectionState
 import clentlogic.cloy.crobotcontroller.domain.model.WifiState
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -16,8 +18,12 @@ interface RobotControllerRepository {
     val bluetoothState: MutableStateFlow<BluetoothState>
     val scanningState: MutableStateFlow<ScanningState>
 
+    val wifiState: MutableStateFlow<WifiState>
+    val wifiConnectionState: MutableStateFlow<WifiConnectionState>
+    val wifiHasInternet: MutableStateFlow<Boolean>
     val remoteConnectionState: MutableStateFlow<RemoteConnectionStatusModel>
     val deviceConnectionStateGlobal: MutableStateFlow<Map<String, Boolean>>
+
 
     fun startScan(wait: Long)
     fun stopScanning()

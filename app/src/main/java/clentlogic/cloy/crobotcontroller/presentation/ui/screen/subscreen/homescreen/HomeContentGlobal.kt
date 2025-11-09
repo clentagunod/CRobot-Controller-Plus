@@ -1,6 +1,5 @@
 package clentlogic.cloy.crobotcontroller.presentation.ui.screen.subscreen.homescreen
 
-import android.bluetooth.BluetoothDevice
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -23,7 +22,6 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.magnifier
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -33,7 +31,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -47,11 +44,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import clentlogic.cloy.crobotcontroller.CRobotControllerApp.Companion.LOCAL_MODE
 import clentlogic.cloy.crobotcontroller.R
+import clentlogic.cloy.crobotcontroller.domain.model.WifiConnectionState
+import clentlogic.cloy.crobotcontroller.domain.model.WifiState
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetWifiHasInternet
 import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
 import clentlogic.cloy.crobotcontroller.presentation.model.LayoutModel
 import clentlogic.cloy.crobotcontroller.presentation.model.ScreenSizeModel
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.DeepTeal
-import clentlogic.cloy.crobotcontroller.presentation.ui.theme.LightPink
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.LimeGreen
 
 
@@ -65,6 +64,10 @@ fun HomeContentGlobal(
 ) {
     val currentControlMode by viewModel.controlModeFlow.collectAsState(LOCAL_MODE)
     val isOnline by viewModel.deviceConnectionStateGlobal.collectAsState()
+
+    val wifiState by viewModel.wifiState.collectAsState()
+    val wifiConnectionState by viewModel.wifiConnectionState.collectAsState()
+    val wifiHasInternet by viewModel.wifiHasInternetConnection.collectAsState()
 
     TopStatusGlobal(
         screenSize,
@@ -81,6 +84,9 @@ fun HomeContentGlobal(
         screenSize,
         viewModel,
         isOnline,
+        wifiState,
+        wifiConnectionState,
+        wifiHasInternet,
         onOpenDeviceGlobal,
     )
 
@@ -251,9 +257,13 @@ private fun AvailableRobotFoundGlobal(
     screenSize: ScreenSizeModel,
     viewModel: MainViewContract,
     isOnline: Map<String, Boolean>,
+    wifiState: WifiState,
+    wifiConnectionState: WifiConnectionState,
+    wifiHasInternet: Boolean,
     onOpenDeviceGlobal: (Map.Entry<String, String>) -> Unit
 ) {
 
+    var hasInternetConnectivity by remember { mutableStateOf(false) }
 
     val layout = remember(screenSize) {
         if (screenSize.w > screenSize.h) {
@@ -282,6 +292,29 @@ private fun AvailableRobotFoundGlobal(
 
     }
 
+    LaunchedEffect(wifiHasInternet, wifiConnectionState, wifiState) {
+        if (wifiState == WifiState.WifiOn) {
+            if (wifiConnectionState == WifiConnectionState.WifiConnected){
+
+                if (wifiHasInternet) {
+                    hasInternetConnectivity = true
+                    println("Wifi has internet!")
+                }else{
+                    println("WIfi no internet!")
+                    hasInternetConnectivity = false
+                }
+
+            }else{
+                println("Wifi disconnected!")
+                hasInternetConnectivity = false
+            }
+
+        }else {
+            println("Wifi off")
+            hasInternetConnectivity = false
+        }
+    }
+
 
     Column(
         modifier = Modifier
@@ -300,16 +333,40 @@ private fun AvailableRobotFoundGlobal(
             )
 
             Spacer(Modifier.width(layout.padding))
-
-
         }
 
-        RobotListGlobal(
-            layout,
-            viewModel,
-            isOnline,
-            onOpenDeviceGlobal
-        )
+        if (hasInternetConnectivity) {
+            RobotListGlobal(
+                layout,
+                viewModel,
+                isOnline,
+                onOpenDeviceGlobal
+            )
+        } else {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(layout.screenSizeH)
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        "No Internet Access",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        "You don't have internet access or please enable your wifi!",
+                        fontSize = 11.sp,
+                        style = MaterialTheme.typography.labelSmall
+
+                    )
+
+                }
+
+            }
+        }
 
 
     }
@@ -349,7 +406,7 @@ private fun RobotListItemGlobal(
     layout: LayoutModel,
     device: Map.Entry<String, Boolean>,
 
-){
+    ) {
     val shape = remember { RoundedCornerShape(layout.borderRadius) }
 
     Row(
@@ -375,14 +432,13 @@ private fun RobotListItemGlobal(
         }
         Spacer(Modifier.weight(1f))
 
-        if (device.value){
+        if (device.value) {
             Text(
                 "Open",
                 style = MaterialTheme.typography.labelSmall,
 
-            )
+                )
         }
-
 
 
     }

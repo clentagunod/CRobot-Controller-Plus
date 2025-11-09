@@ -6,6 +6,8 @@ import clentlogic.cloy.crobotcontroller.domain.model.BleConnectionState
 import clentlogic.cloy.crobotcontroller.domain.model.BluetoothState
 import clentlogic.cloy.crobotcontroller.domain.model.CmdModel
 import clentlogic.cloy.crobotcontroller.domain.model.ScanningState
+import clentlogic.cloy.crobotcontroller.domain.model.WifiConnectionState
+import clentlogic.cloy.crobotcontroller.domain.model.WifiState
 import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +26,10 @@ class FakeViewModel: MainViewContract {
     override val toggleControlButtonFlow: Flow<Boolean> = flowOf(false)
     override val controlModeFlow: Flow<String> = flowOf(LOCAL_MODE)
     override val deviceConnectionStateGlobal = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+    override val wifiState: MutableStateFlow<WifiState> = MutableStateFlow(WifiState.WifiOff)
+    override val wifiConnectionState: MutableStateFlow<WifiConnectionState> = MutableStateFlow(
+        WifiConnectionState.WifiDisconnected)
+    override val wifiHasInternetConnection: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
     override suspend fun startScanning(wait: Long) = Unit
     override fun stopScan() = Unit

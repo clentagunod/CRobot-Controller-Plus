@@ -8,29 +8,32 @@ import clentlogic.cloy.crobotcontroller.data.communication.wifi.WifiHelper
 import clentlogic.cloy.crobotcontroller.data.local.roomdb.dao.RobotDao
 import clentlogic.cloy.crobotcontroller.data.local.roomdb.db.CmdDatabase
 import clentlogic.cloy.crobotcontroller.data.remote.firebase.FirebaseRealtimeDbHelper
-import clentlogic.cloy.crobotcontroller.domain.repository.RobotControllerRepository
 import clentlogic.cloy.crobotcontroller.domain.repository.CmdRepository
 import clentlogic.cloy.crobotcontroller.domain.repository.DataStoreRepository
-import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.ConnectRobot
-import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.DisconnectRobot
-import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.SendDataToRobot
-import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetDeviceDataFlow
-import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.StartScan
-import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.StopScanning
-import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetBluetoothStateFlow
-import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetConnectionStateFlow
-import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetScanningStateFlow
+import clentlogic.cloy.crobotcontroller.domain.repository.RobotControllerRepository
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.AddCmd
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.DeleteCmd
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.GetAllCmd
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.UpdateCmd
-import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetControlMode
-import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetPermissionState
-import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetToggleButtonState
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.dataflow.GetControlModeDataFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.dataflow.GetPermissionsDataFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.dataflow.GetToggleButtonControlDataFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetControlMode
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetPermissionState
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetToggleButtonState
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.ConnectRobot
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.DisconnectRobot
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.SendDataToRobot
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.StartScan
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.StopScanning
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetBluetoothStateFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetConnectionStateFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetDeviceConnectionStateGlobal
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetDeviceDataFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetScanningStateFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetWifiConnectionStateFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetWifiHasInternet
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetWifiStateFlow
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -167,9 +170,20 @@ object AppModule {
     fun provideGetDeviceConnectionStateGlobal(repository: RobotControllerRepository): GetDeviceConnectionStateGlobal =
         GetDeviceConnectionStateGlobal(repository)
 
+    @Provides
+    @Singleton
+    fun provideWifiStateFlow(repository: RobotControllerRepository): GetWifiStateFlow =
+        GetWifiStateFlow(repository)
 
+    @Provides
+    @Singleton
+    fun provideWifiConnectionStateFlow(repository: RobotControllerRepository): GetWifiConnectionStateFlow =
+        GetWifiConnectionStateFlow(repository)
 
-
+    @Provides
+    @Singleton
+    fun provideWifiHasInternet(repository: RobotControllerRepository): GetWifiHasInternet =
+        GetWifiHasInternet(repository)
 
 
 

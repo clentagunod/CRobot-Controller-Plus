@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import clentlogic.cloy.crobotcontroller.CRobotControllerApp.Companion.GLOBAL_MODE
 import clentlogic.cloy.crobotcontroller.CRobotControllerApp.Companion.LOCAL_MODE
+import clentlogic.cloy.crobotcontroller.domain.model.WifiState
 import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
 import clentlogic.cloy.crobotcontroller.presentation.viewmodel.MainViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -30,9 +31,17 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun TestCompose(
-
+    viewModel: MainViewContract = hiltViewModel<MainViewModel>()
 ) {
+    val wifiState by viewModel.wifiState.collectAsState()
 
+
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier.fillMaxSize()
+    ){
+        Text(text = if (wifiState == WifiState.WifiOn) "On" else "Off")
+    }
 
 
 }

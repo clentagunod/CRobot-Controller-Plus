@@ -5,6 +5,8 @@ import clentlogic.cloy.crobotcontroller.domain.model.BleConnectionState
 import clentlogic.cloy.crobotcontroller.domain.model.BluetoothState
 import clentlogic.cloy.crobotcontroller.domain.model.CmdModel
 import clentlogic.cloy.crobotcontroller.domain.model.ScanningState
+import clentlogic.cloy.crobotcontroller.domain.model.WifiConnectionState
+import clentlogic.cloy.crobotcontroller.domain.model.WifiState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,6 +25,10 @@ interface MainViewContract {
     val controlModeFlow: Flow<String>
 
     val deviceConnectionStateGlobal: MutableStateFlow<Map<String, Boolean>>
+
+    val wifiState: MutableStateFlow<WifiState>
+    val wifiConnectionState: MutableStateFlow<WifiConnectionState>
+    val wifiHasInternetConnection: MutableStateFlow<Boolean>
 
     suspend fun startScanning(wait: Long)
     fun stopScan()

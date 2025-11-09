@@ -5,7 +5,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import clentlogic.cloy.crobotcontroller.domain.model.BluetoothState
 import clentlogic.cloy.crobotcontroller.domain.model.CmdModel
-import clentlogic.cloy.crobotcontroller.domain.repository.RobotControllerRepository
+import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.AddCmd
+import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.DeleteCmd
+import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.GetAllCmd
+import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.dataflow.GetControlModeDataFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.dataflow.GetPermissionsDataFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.dataflow.GetToggleButtonControlDataFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetControlMode
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetPermissionState
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetToggleButtonState
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.ConnectRobot
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.DisconnectRobot
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.SendDataToRobot
@@ -13,23 +21,16 @@ import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.StopScanning
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetBluetoothStateFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetConnectionStateFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetDeviceConnectionStateGlobal
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetDeviceDataFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetScanningStateFlow
-import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.AddCmd
-import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.DeleteCmd
-import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.GetAllCmd
-import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetControlMode
-import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetPermissionState
-import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetToggleButtonState
-import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.dataflow.GetControlModeDataFlow
-import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.dataflow.GetPermissionsDataFlow
-import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.dataflow.GetToggleButtonControlDataFlow
-import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetDeviceConnectionStateGlobal
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetWifiConnectionStateFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetWifiHasInternet
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetWifiStateFlow
 import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flowOn
@@ -59,6 +60,9 @@ class MainViewModel @Inject constructor(
     private val getControlModeDataFlow: GetControlModeDataFlow,
     private val setControlMode: SetControlMode,
     private val getDeviceConnectionStateGlobal: GetDeviceConnectionStateGlobal,
+    private val getWifiStateFlow: GetWifiStateFlow,
+    private val getWifiConnectionStateFlow: GetWifiConnectionStateFlow,
+    private val getWifiHasInternet: GetWifiHasInternet,
 
 
 
@@ -87,6 +91,10 @@ class MainViewModel @Inject constructor(
     override val controlModeFlow = getControlModeDataFlow()
 
     override val deviceConnectionStateGlobal = getDeviceConnectionStateGlobal()
+    override val wifiState = getWifiStateFlow()
+    override val wifiConnectionState = getWifiConnectionStateFlow()
+    override val wifiHasInternetConnection = getWifiHasInternet()
+
 
     var bluetoothIsOn = false
 
@@ -99,7 +107,6 @@ class MainViewModel @Inject constructor(
         }
 
     }
-
 
 
     private fun autoScan(){
