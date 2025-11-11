@@ -23,7 +23,6 @@ class BlePermissionHandler(
           val isPermitted = permission.values.all { it  }
           if (isPermitted){
                Log.d("Permission", "Permitted!")
-               enableBluetooth()
           }else{
                Log.d("Permission", "Permission Denied!")
           }
@@ -62,7 +61,7 @@ class BlePermissionHandler(
           if (missingPermission.isNotEmpty()){
                permissionCallback.launch(missingPermission.toTypedArray())
           }else{
-               enableBluetooth()
+            //
           }
      }
 

@@ -446,11 +446,12 @@ private fun RobotListItemGlobal(
     onChangeTopStatus: (String) -> Unit,
     onChangeRobotName: (String) -> Unit,
     onOpenDeviceGlobal: (String) -> Unit
-
-    ) {
+) {
     val shape = remember { RoundedCornerShape(layout.borderRadius) }
-    var isConnectedDevice by rememberSaveable{ mutableStateOf(false) }
+
+    var isConnectedDevice by rememberSaveable { mutableStateOf(false) }
     var isLoading by rememberSaveable { mutableStateOf(false) }
+    val isInUse by rememberSaveable {mutableStateOf(robot.isInUse) }
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -479,7 +480,7 @@ private fun RobotListItemGlobal(
             )
             Text(
                 text = if (robot.isOnline){
-                    if (robot.isInUse){
+                    if (isInUse){
                         "Is in use"
                     }else{
                         "Online"

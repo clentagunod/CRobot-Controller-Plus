@@ -7,6 +7,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
@@ -87,6 +88,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun ManageDeviceScreen(
     viewModel: MainViewContract,
+    onBackHandler: () -> Unit,
     onDisconnectRobot: () -> Unit,
 ) {
     val controlMode by viewModel.controlModeFlow.collectAsState(LOCAL_MODE)
@@ -135,6 +137,11 @@ fun ManageDeviceScreen(
             padding = padding,
             toggleWindowSize = toggleSize
         )
+    }
+
+    BackHandler {
+        viewModel.updateRobotData(false)
+        onBackHandler()
     }
 
     ToggleSystemBars()

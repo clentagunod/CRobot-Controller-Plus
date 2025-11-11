@@ -113,6 +113,9 @@ fun AppNavHost(
                 LandscapeCompose {
                     ManageDeviceScreen(
                         viewModel,
+                        onBackHandler = {
+                          navController.popBackStack()
+                        },
                         onDisconnectRobot = {
                             navController.popBackStack()
 
