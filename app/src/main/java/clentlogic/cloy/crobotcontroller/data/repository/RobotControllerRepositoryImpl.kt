@@ -14,6 +14,7 @@ import clentlogic.cloy.crobotcontroller.domain.model.RemoteConnectionStatusModel
 import clentlogic.cloy.crobotcontroller.domain.model.ScanningState
 import clentlogic.cloy.crobotcontroller.domain.model.WifiConnectionState
 import clentlogic.cloy.crobotcontroller.domain.model.WifiState
+import clentlogic.cloy.crobotcontroller.domain.model.firebase.RobotModel
 import clentlogic.cloy.crobotcontroller.domain.repository.RobotControllerRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -67,10 +68,10 @@ class RobotControllerRepositoryImpl @Inject constructor(
     private val _wifiHasInternet = MutableStateFlow(wifiHelper.hasWifiInternet())
     override val wifiHasInternet: MutableStateFlow<Boolean> = _wifiHasInternet
 
+    private val _robotModel = MutableStateFlow(emptyList<RobotModel>())
+    override val robotModel: MutableStateFlow<List<RobotModel>> = _robotModel
 
-    private val _deviceConnectionStateGlobal = MutableStateFlow<Map<String, Boolean>>(emptyMap())
-    override val deviceConnectionStateGlobal: MutableStateFlow<Map<String, Boolean>> =
-        _deviceConnectionStateGlobal
+
 
 
     init {
@@ -117,7 +118,7 @@ class RobotControllerRepositoryImpl @Inject constructor(
 
 
         firebaseHelper.onDeviceConnectionState = {
-            _deviceConnectionStateGlobal.value = it
+            _robotModel.value = it
 
         }
 
@@ -178,6 +179,10 @@ class RobotControllerRepositoryImpl @Inject constructor(
             firebaseHelper.sendDataFirebase(dataInt)
         }
 
+    }
+
+    override fun updateData(data: Boolean) {
+        firebaseHelper.updateDataFirebase(data)
     }
 
 

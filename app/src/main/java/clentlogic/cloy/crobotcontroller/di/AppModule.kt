@@ -28,12 +28,13 @@ import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.StopScanning
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetBluetoothStateFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetConnectionStateFlow
-import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetDeviceConnectionStateGlobal
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetRobotModel
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetDeviceDataFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetScanningStateFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetWifiConnectionStateFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetWifiHasInternet
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetWifiStateFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.UpdateData
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -106,6 +107,10 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideUpdateData(repository: RobotControllerRepository): UpdateData = UpdateData(repository)
+
+    @Provides
+    @Singleton
     fun provideGetDeviceDataFlow(repository: RobotControllerRepository): GetDeviceDataFlow =
         GetDeviceDataFlow(repository)
 
@@ -167,8 +172,8 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideGetDeviceConnectionStateGlobal(repository: RobotControllerRepository): GetDeviceConnectionStateGlobal =
-        GetDeviceConnectionStateGlobal(repository)
+    fun provideGetRobotModel(repository: RobotControllerRepository): GetRobotModel =
+        GetRobotModel(repository)
 
     @Provides
     @Singleton
@@ -184,8 +189,6 @@ object AppModule {
     @Singleton
     fun provideWifiHasInternet(repository: RobotControllerRepository): GetWifiHasInternet =
         GetWifiHasInternet(repository)
-
-
 
 
 

@@ -64,7 +64,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import clentlogic.cloy.crobotcontroller.CRobotControllerApp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import clentlogic.cloy.crobotcontroller.CRobotControllerApp.Companion.GLOBAL_MODE
 import clentlogic.cloy.crobotcontroller.CRobotControllerApp.Companion.LOCAL_MODE
 import clentlogic.cloy.crobotcontroller.R
@@ -99,7 +99,6 @@ fun ManageDeviceScreen(
     var toggleDisconnectedPopup by remember { mutableStateOf(false) }
 
     var toggleDisconnectedPopupGlobal by remember { mutableStateOf(false) }
-
 
 
     val context = LocalContext.current
@@ -142,7 +141,8 @@ fun ManageDeviceScreen(
 
     LaunchedEffect(wifiStatus, wifiConnectionState, wifiHasInternet) {
         if (wifiStatus == WifiState.WifiOff) toggleDisconnectedPopupGlobal = true
-        if (wifiConnectionState == WifiConnectionState.WifiDisconnected) toggleDisconnectedPopupGlobal = true
+        if (wifiConnectionState == WifiConnectionState.WifiDisconnected) toggleDisconnectedPopupGlobal =
+            true
         if (!wifiHasInternet) toggleDisconnectedPopupGlobal = true
     }
 
@@ -153,17 +153,18 @@ fun ManageDeviceScreen(
                     deviceName = it.key
                 }
             }
+
             GLOBAL_MODE -> {
-                deviceNameGlobal?.let {
-                    deviceName = it.key
-                }
+                deviceName = deviceNameGlobal
+
             }
+
             else -> {}
         }
     }
 
     LaunchedEffect(connState) {
-        if (connState == BleConnectionState.Disconnected){
+        if (connState == BleConnectionState.Disconnected) {
             toggleDisconnectedPopup = true
             delay(4000)
             toggleDisconnectedPopup = false
@@ -222,6 +223,7 @@ fun ManageDeviceScreen(
         viewModel,
         deviceName,
         isToggled,
+        controlMode,
         {
             isToggled = it
         },
@@ -229,27 +231,23 @@ fun ManageDeviceScreen(
             hasError = false
             reloadKey++
         },
-        onDisconnectRobot
+        onDisconnectRobot,
     )
 
-    if(controlMode == LOCAL_MODE){
+    if (controlMode == LOCAL_MODE) {
         DisconnectedPopUp(
             toggleDisconnectedPopup,
             layout
         )
 
 
-    }else {
+    } else {
         DisconnectedPopUp(
             toggleDisconnectedPopupGlobal,
             layout
         )
 
     }
-
-
-
-
 
 
 }
@@ -259,16 +257,16 @@ fun DisconnectedPopUp(
     toggle: Boolean,
     layout: LayoutModel,
     modifier: Modifier = Modifier
-){
+) {
 
     AnimatedVisibility(
         visible = toggle,
         enter = slideInVertically(
-            initialOffsetY = { height -> -height},
+            initialOffsetY = { height -> -height },
             animationSpec = tween(300)
         ),
         exit = slideOutVertically(
-            targetOffsetY = { height -> -height},
+            targetOffsetY = { height -> -height },
             animationSpec = tween(300)
 
         )
@@ -301,6 +299,7 @@ private fun ManageDeviceContent(
     viewModel: MainViewContract,
     deviceName: String,
     toggle: Boolean,
+    controlMode: String,
     onToggleButtonChange: (Boolean) -> Unit,
     onRefresh: () -> Unit,
     onDisconnectRobot: () -> Unit,
@@ -343,6 +342,7 @@ private fun ManageDeviceContent(
             deviceName,
             localShowRobotController,
             onRefresh,
+            controlMode,
             onToggleButtonChange = {
                 localShowRobotController = it
             },
@@ -398,6 +398,7 @@ private fun ToggleControlConfig(
     deviceName: String,
     localShowRobotController: Boolean,
     onRefresh: () -> Unit,
+    controlMode: String,
     onToggleButtonChange: (Boolean) -> Unit,
     onDisconnectRobot: () -> Unit,
     modifier: Modifier = Modifier
@@ -496,7 +497,12 @@ private fun ToggleControlConfig(
                 WakeCycle()
                 CameraConfig()
                 Spacer(modifier.height(20.dp))
-                DisconnectRobot(viewModel, onDisconnectRobot, webView)
+                DisconnectRobot(
+                    viewModel,
+                    controlMode,
+                    onDisconnectRobot,
+                    webView,
+                )
 
 
             }
@@ -614,6 +620,7 @@ private fun CameraConfig(
 @Composable
 fun DisconnectRobot(
     viewModel: MainViewContract,
+    controlMode: String,
     onDisconnectRobot: () -> Unit,
     webView: WebView,
     modifier: Modifier = Modifier
@@ -631,15 +638,18 @@ fun DisconnectRobot(
                     destroy()
 
                 }
-                viewModel.disconnectDevice()
+                if (controlMode == LOCAL_MODE){
+                    viewModel.disconnectDevice()
+                }else{
+                    viewModel.updateRobotData(false)
+                }
                 onDisconnectRobot()
 
             },
             colors = ButtonDefaults.buttonColors(
                 backgroundColor = Color.Red,
-                contentColor = Color.White,
-
-                )
+                contentColor = Color.White
+            )
         ) {
             Text("Disconnect", color = Color.White)
 

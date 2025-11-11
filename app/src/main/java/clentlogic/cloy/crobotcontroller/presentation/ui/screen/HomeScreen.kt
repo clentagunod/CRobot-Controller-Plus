@@ -30,7 +30,7 @@ fun HomeScreen(
     blePermissionHandler: BlePermissionHandler,
     onOpenSettings: () -> Unit,
     onOpenDeviceLocal: (Map.Entry<String, BluetoothDevice>) -> Unit,
-    onOpenDeviceGlobal: (Map.Entry<String, Boolean>) -> Unit
+    onOpenDeviceGlobal: (String) -> Unit
 ) {
 
     val bluetoothState by viewModel.bluetoothState.collectAsState()
@@ -74,7 +74,7 @@ private fun HomeScreenContent(
     onDeviceNameChange: (String) -> Unit,
     onOpenSettings: () -> Unit,
     onOpenDevice: (Map.Entry<String, BluetoothDevice>) -> Unit,
-    onOpenDeviceGlobal: (Map.Entry<String, Boolean>) -> Unit,
+    onOpenDeviceGlobal: (String) -> Unit,
 ) {
 
     val controlMode by viewModel.controlModeFlow.collectAsState(LOCAL_MODE)

@@ -7,6 +7,7 @@ import clentlogic.cloy.crobotcontroller.domain.model.CmdModel
 import clentlogic.cloy.crobotcontroller.domain.model.ScanningState
 import clentlogic.cloy.crobotcontroller.domain.model.WifiConnectionState
 import clentlogic.cloy.crobotcontroller.domain.model.WifiState
+import clentlogic.cloy.crobotcontroller.domain.model.firebase.RobotModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,7 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 interface MainViewContract {
 
     val selectedDeviceLocal: StateFlow<Map.Entry<String, BluetoothDevice>?>
-    val selectedDeviceGlobal: StateFlow<Map.Entry<String, Boolean>?>
+    val selectedDeviceGlobal: StateFlow<String>
     val cmd: StateFlow<List<CmdModel>>
     val connectionState: StateFlow<BleConnectionState>
     val device: StateFlow<Map<String, BluetoothDevice>>
@@ -24,7 +25,7 @@ interface MainViewContract {
     val toggleControlButtonFlow: Flow<Boolean>
     val controlModeFlow: Flow<String>
 
-    val deviceConnectionStateGlobal: MutableStateFlow<Map<String, Boolean>>
+    val robotModel: MutableStateFlow<List<RobotModel>>
 
     val wifiState: MutableStateFlow<WifiState>
     val wifiConnectionState: MutableStateFlow<WifiConnectionState>
@@ -36,11 +37,13 @@ interface MainViewContract {
     fun disconnectDevice()
 
     fun sendDataToBleDevice(data: ByteArray)
+    fun updateRobotData(data: Boolean)
+
     fun addCommand(cmdModel: CmdModel)
     fun deleteCommand(cmdModel: CmdModel)
 
     fun selectBleDevice(device: Map.Entry<String, BluetoothDevice>)
-    fun selectDevice(device: Map.Entry<String, Boolean>)
+    fun selectDevice(device: String)
 
     fun setPermission(isPermitted: Boolean)
     fun setToggleControlButtonState(isToggled: Boolean)

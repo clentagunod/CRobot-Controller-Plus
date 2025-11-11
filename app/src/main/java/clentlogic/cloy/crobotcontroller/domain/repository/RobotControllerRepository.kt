@@ -8,6 +8,7 @@ import clentlogic.cloy.crobotcontroller.domain.model.RemoteConnectionStatusModel
 import clentlogic.cloy.crobotcontroller.domain.model.ScanningState
 import clentlogic.cloy.crobotcontroller.domain.model.WifiConnectionState
 import clentlogic.cloy.crobotcontroller.domain.model.WifiState
+import clentlogic.cloy.crobotcontroller.domain.model.firebase.RobotModel
 import kotlinx.coroutines.flow.MutableStateFlow
 
 interface RobotControllerRepository {
@@ -22,7 +23,7 @@ interface RobotControllerRepository {
     val wifiConnectionState: MutableStateFlow<WifiConnectionState>
     val wifiHasInternet: MutableStateFlow<Boolean>
     val remoteConnectionState: MutableStateFlow<RemoteConnectionStatusModel>
-    val deviceConnectionStateGlobal: MutableStateFlow<Map<String, Boolean>>
+    val robotModel: MutableStateFlow<List<RobotModel>>
 
 
     fun startScan(wait: Long)
@@ -30,6 +31,7 @@ interface RobotControllerRepository {
     fun connectRobot(device: BluetoothDevice)
     fun disconnectRobot()
     fun sendDataToRobot(data: ByteArray)
+    fun updateData(data: Boolean)
 
 
 

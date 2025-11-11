@@ -21,12 +21,13 @@ import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.StopScanning
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetBluetoothStateFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetConnectionStateFlow
-import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetDeviceConnectionStateGlobal
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetRobotModel
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetDeviceDataFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetScanningStateFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetWifiConnectionStateFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetWifiHasInternet
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetWifiStateFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.UpdateData
 import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -49,6 +50,7 @@ class MainViewModel @Inject constructor(
     private val connectBleDevice: ConnectRobot,
     private val disconnectBleDevice: DisconnectRobot,
     private val sendDataToBle: SendDataToRobot,
+    private val updateData: UpdateData,
     private val getDeviceDataFlow: GetDeviceDataFlow,
     private val getConnectionStateFlow: GetConnectionStateFlow,
     private val getBluetoothStateFlow: GetBluetoothStateFlow,
@@ -59,21 +61,21 @@ class MainViewModel @Inject constructor(
     private val setToggleButtonState: SetToggleButtonState,
     private val getControlModeDataFlow: GetControlModeDataFlow,
     private val setControlMode: SetControlMode,
-    private val getDeviceConnectionStateGlobal: GetDeviceConnectionStateGlobal,
+    private val getRobotModel: GetRobotModel,
     private val getWifiStateFlow: GetWifiStateFlow,
     private val getWifiConnectionStateFlow: GetWifiConnectionStateFlow,
     private val getWifiHasInternet: GetWifiHasInternet,
 
 
 
-) : ViewModel(), MainViewContract {
+    ) : ViewModel(), MainViewContract {
 
 
     private val _selectedDevice = MutableStateFlow<Map.Entry<String, BluetoothDevice>?>(null)
     override val selectedDeviceLocal: StateFlow<Map.Entry<String, BluetoothDevice>?> = _selectedDevice
 
-    private val _selectedDeviceGlobal = MutableStateFlow<Map.Entry<String, Boolean>?>(null)
-    override val selectedDeviceGlobal: StateFlow<Map.Entry<String, Boolean>?> = _selectedDeviceGlobal
+    private val _selectedDeviceGlobal = MutableStateFlow("")
+    override val selectedDeviceGlobal: StateFlow<String> = _selectedDeviceGlobal
 
     private val _cmd = MutableStateFlow<List<CmdModel>>(emptyList())
     override val cmd: StateFlow<List<CmdModel>> = _cmd
@@ -90,7 +92,7 @@ class MainViewModel @Inject constructor(
     override val toggleControlButtonFlow = getToggleButtonControlDataFlow()
     override val controlModeFlow = getControlModeDataFlow()
 
-    override val deviceConnectionStateGlobal = getDeviceConnectionStateGlobal()
+    override val robotModel = getRobotModel()
     override val wifiState = getWifiStateFlow()
     override val wifiConnectionState = getWifiConnectionStateFlow()
     override val wifiHasInternetConnection = getWifiHasInternet()
@@ -126,8 +128,6 @@ class MainViewModel @Inject constructor(
             }
 
         }
-
-
     }
 
 
@@ -160,7 +160,7 @@ class MainViewModel @Inject constructor(
         _selectedDevice.value = device
     }
 
-    override fun selectDevice(device: Map.Entry<String, Boolean>) {
+    override fun selectDevice(device: String) {
         _selectedDeviceGlobal.value = device
     }
 
@@ -169,6 +169,7 @@ class MainViewModel @Inject constructor(
     override fun connectToDevice(device: BluetoothDevice) = connectBleDevice(device)
     override fun disconnectDevice() = disconnectBleDevice()
     override fun sendDataToBleDevice(data: ByteArray) = sendDataToBle(data)
+    override fun updateRobotData(data: Boolean) = updateData(data)
 
     override fun setPermission(isPermitted: Boolean) {
         viewModelScope.launch {

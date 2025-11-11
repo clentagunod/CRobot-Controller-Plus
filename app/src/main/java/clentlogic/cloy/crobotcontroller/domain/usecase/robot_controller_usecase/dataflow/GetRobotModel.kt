@@ -2,6 +2,6 @@ package clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase
 
 import clentlogic.cloy.crobotcontroller.domain.repository.RobotControllerRepository
 
-class GetDeviceConnectionStateGlobal(private val repository: RobotControllerRepository){
-    operator fun invoke() = repository.deviceConnectionStateGlobal
+class GetRobotModel(private val repository: RobotControllerRepository){
+    operator fun invoke() = repository.robotModel
 }

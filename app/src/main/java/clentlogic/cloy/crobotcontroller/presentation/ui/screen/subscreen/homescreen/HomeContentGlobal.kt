@@ -37,6 +37,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,10 +47,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import clentlogic.cloy.crobotcontroller.CRobotControllerApp.Companion.LOCAL_MODE
 import clentlogic.cloy.crobotcontroller.R
 import clentlogic.cloy.crobotcontroller.domain.model.WifiConnectionState
 import clentlogic.cloy.crobotcontroller.domain.model.WifiState
+import clentlogic.cloy.crobotcontroller.domain.model.firebase.RobotModel
 import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
 import clentlogic.cloy.crobotcontroller.presentation.model.LayoutModel
 import clentlogic.cloy.crobotcontroller.presentation.model.ScreenSizeModel
@@ -64,19 +67,18 @@ fun HomeContentGlobal(
     viewModel: MainViewContract,
     screenSize: ScreenSizeModel,
     onOpenSettings: () -> Unit,
-    onOpenDeviceGlobal: (Map.Entry<String, Boolean>) -> Unit
+    onOpenDeviceGlobal: (String) -> Unit
 
 ) {
     val currentControlMode by viewModel.controlModeFlow.collectAsState(LOCAL_MODE)
-    val isOnline by viewModel.deviceConnectionStateGlobal.collectAsState()
+    val robotModels by viewModel.robotModel.collectAsState()
 
     val wifiState by viewModel.wifiState.collectAsState()
     val wifiConnectionState by viewModel.wifiConnectionState.collectAsState()
     val wifiHasInternet by viewModel.wifiHasInternetConnection.collectAsState()
 
-    var topStatus by remember {  mutableStateOf("Offline")}
-    var robotNameStatus by remember { mutableStateOf("None") }
-
+    var topStatus by rememberSaveable() {  mutableStateOf("Offline")}
+    var robotNameStatus by rememberSaveable() { mutableStateOf("None") }
 
 
     TopStatusGlobal(
@@ -95,7 +97,7 @@ fun HomeContentGlobal(
     AvailableRobotFoundGlobal(
         screenSize,
         viewModel,
-        isOnline,
+        robotModels,
         wifiState,
         wifiConnectionState,
         wifiHasInternet,
@@ -281,11 +283,11 @@ private fun RobotNameStatusGlobal(
 private fun AvailableRobotFoundGlobal(
     screenSize: ScreenSizeModel,
     viewModel: MainViewContract,
-    isOnline: Map<String, Boolean>,
+    robotModels: List<RobotModel>,
     wifiState: WifiState,
     wifiConnectionState: WifiConnectionState,
     wifiHasInternet: Boolean,
-    onOpenDeviceGlobal: (Map.Entry<String, Boolean>) -> Unit,
+    onOpenDeviceGlobal: (String) -> Unit,
     onChangeTopStatus: (String) -> Unit,
     onChangeRobotName: (String) -> Unit,
 ) {
@@ -366,7 +368,7 @@ private fun AvailableRobotFoundGlobal(
             RobotListGlobal(
                 layout,
                 viewModel,
-                isOnline,
+                robotModels,
                 onOpenDeviceGlobal,
                 onChangeTopStatus,
                 onChangeRobotName,
@@ -406,8 +408,8 @@ private fun AvailableRobotFoundGlobal(
 private fun RobotListGlobal(
     layout: LayoutModel,
     viewModel: MainViewContract,
-    isOnline: Map<String, Boolean>,
-    onOpenDeviceGlobal: (Map.Entry<String, Boolean>) -> Unit,
+    robotModels: List<RobotModel>,
+    onOpenDeviceGlobal: (String) -> Unit,
     onChangeTopStatus: (String) -> Unit,
     onChangeRobotName: (String) -> Unit,
 ) {
@@ -418,13 +420,14 @@ private fun RobotListGlobal(
         userScrollEnabled = true
     ) {
         items(
-            isOnline.entries.toList(),
-            key = { it.key }
-        ) { device ->
+            robotModels,
+            key = { it.name }
+        ) { robotModel ->
 
             RobotListItemGlobal(
                 layout,
-                device,
+                robotModel,
+                viewModel,
                 onChangeTopStatus,
                 onChangeRobotName,
                 onOpenDeviceGlobal
@@ -438,24 +441,26 @@ private fun RobotListGlobal(
 @Composable
 private fun RobotListItemGlobal(
     layout: LayoutModel,
-    device: Map.Entry<String, Boolean>,
+    robot: RobotModel,
+    viewModel: MainViewContract,
     onChangeTopStatus: (String) -> Unit,
     onChangeRobotName: (String) -> Unit,
-    onOpenDeviceGlobal: (Map.Entry<String, Boolean>) -> Unit
+    onOpenDeviceGlobal: (String) -> Unit
 
     ) {
     val shape = remember { RoundedCornerShape(layout.borderRadius) }
-    var isConnected by remember { mutableStateOf(false) }
-    var isLoading by remember { mutableStateOf(false) }
+    var isConnectedDevice by rememberSaveable{ mutableStateOf(false) }
+    var isLoading by rememberSaveable { mutableStateOf(false) }
 
     val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(device.value, device.key) {
-        if (!device.value) {
+    LaunchedEffect(robot.isOnline, robot.name) {
+        if (!robot.isOnline) {
             onChangeTopStatus("Offline")
         }
 
     }
+
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -468,24 +473,34 @@ private fun RobotListItemGlobal(
     ) {
         Column {
             Text(
-                device.key,
+                robot.name,
                 color = DeepTeal,
                 style = MaterialTheme.typography.headlineSmall
             )
             Text(
-                text = if (device.value) "Online" else "Offline",
+                text = if (robot.isOnline){
+                    if (robot.isInUse){
+                        "Is in use"
+                    }else{
+                        "Online"
+                    }
+                } else{
+                    "Offline"
+                },
                 style = MaterialTheme.typography.labelSmall,
                 modifier = Modifier.alpha(layout.alpha)
             )
         }
         Spacer(Modifier.weight(1f))
 
-        if (device.value) {
+        if (robot.isOnline) {
             when {
-                isConnected -> {
+                isConnectedDevice -> {
+
                     TextButton(
                         onClick = {
-                            onOpenDeviceGlobal(device)
+                            viewModel.updateRobotData(true)
+                            onOpenDeviceGlobal(robot.name)
                         }
                     ) {
                         Text(
@@ -496,8 +511,9 @@ private fun RobotListItemGlobal(
 
                     }
 
-                    onChangeRobotName(device.key)
+                    onChangeRobotName(robot.name)
                     onChangeTopStatus("Online")
+
                 }
                 isLoading -> {
                     CircularProgressIndicator(
@@ -508,20 +524,23 @@ private fun RobotListItemGlobal(
                     onChangeTopStatus("Linking")
                 }
                 else -> {
-                    Text(
-                        "Connect",
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier.clickable{
-                            isLoading = true
+                    onChangeTopStatus("Offline")
+                    if (!robot.isInUse){
+                        Text(
+                            "Connect",
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.clickable{
+                                isLoading = true
 
-                            coroutineScope.launch {
-                                delay(3000)
-                                isLoading = false
-                                isConnected = true
+                                coroutineScope.launch {
+                                    delay(3000)
+                                    isLoading = false
+                                    isConnectedDevice = true
+                                }
                             }
-                        }
-                    )
+                        )
 
+                    }
 
                 }
 
