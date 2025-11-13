@@ -1,6 +1,7 @@
 package clentlogic.cloy.crobotcontroller.presentation.viewmodel
 
 import android.bluetooth.BluetoothDevice
+import androidx.datastore.preferences.core.Preferences
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import clentlogic.cloy.crobotcontroller.domain.model.BluetoothState
@@ -8,12 +9,16 @@ import clentlogic.cloy.crobotcontroller.domain.model.CmdModel
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.AddCmd
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.DeleteCmd
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.GetAllCmd
-import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.dataflow.GetControlModeDataFlow
-import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.dataflow.GetPermissionsDataFlow
-import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.dataflow.GetToggleButtonControlDataFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.dataflow.GetControlModeDataFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.dataflow.GetPermissionsDataFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.dataflow.GetToggleButtonControlsFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetControlMode
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetLoginCredential
 import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetPermissionState
-import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetToggleButtonState
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetToggleControls
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SignOutFb
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.dataflow.GetLoginCredential
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.dataflow.GetLoginStatus
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.ConnectRobot
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.DisconnectRobot
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.SendDataToRobot
@@ -57,14 +62,18 @@ class MainViewModel @Inject constructor(
     private val getScanningStateFlow: GetScanningStateFlow,
     private val getPermissionsDataFlow: GetPermissionsDataFlow,
     private val setPermissionsOk: SetPermissionState,
-    private val getToggleButtonControlDataFlow: GetToggleButtonControlDataFlow,
-    private val setToggleButtonState: SetToggleButtonState,
+    private val getToggleButtonControlDataFlow: GetToggleButtonControlsFlow,
+    private val setToggleButtonState: SetToggleControls,
     private val getControlModeDataFlow: GetControlModeDataFlow,
     private val setControlMode: SetControlMode,
     private val getRobotModel: GetRobotModel,
     private val getWifiStateFlow: GetWifiStateFlow,
     private val getWifiConnectionStateFlow: GetWifiConnectionStateFlow,
     private val getWifiHasInternet: GetWifiHasInternet,
+    private val getEmailAndPassword: GetLoginCredential,
+    private val setEmailAndPassword: SetLoginCredential,
+    private val getLoginStatus: GetLoginStatus,
+    private val signOutFb: SignOutFb,
 
 
 
@@ -89,8 +98,10 @@ class MainViewModel @Inject constructor(
     override val scanningState = getScanningStateFlow()
 
     override val permissionFlow = getPermissionsDataFlow()
-    override val toggleControlButtonFlow = getToggleButtonControlDataFlow()
+    override val toggleControls = getToggleButtonControlDataFlow()
     override val controlModeFlow = getControlModeDataFlow()
+    override val loginCredential = getEmailAndPassword()
+    override val loginStatus = getLoginStatus()
 
     override val robotModel = getRobotModel()
     override val wifiState = getWifiStateFlow()
@@ -168,7 +179,7 @@ class MainViewModel @Inject constructor(
     override fun stopScan() = stopScanning()
     override fun connectToDevice(device: BluetoothDevice) = connectBleDevice(device)
     override fun disconnectDevice() = disconnectBleDevice()
-    override fun sendDataToBleDevice(data: ByteArray) = sendDataToBle(data)
+    override fun sendDataToRobot(data: ByteArray) = sendDataToBle(data)
     override fun updateRobotData(data: Boolean) = updateData(data)
 
     override fun setPermission(isPermitted: Boolean) {
@@ -177,9 +188,9 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    override fun setToggleControlButtonState(isToggled: Boolean){
+    override fun setToggleControls(isToggled: Boolean, key: Preferences.Key<Boolean>) {
         viewModelScope.launch {
-            setToggleButtonState(isToggled)
+            setToggleButtonState(isToggled, key)
         }
     }
 
@@ -189,5 +200,10 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    override fun setLoginCredential(username: String, email: String, password: String) =
+        setEmailAndPassword(username, email, password)
+
+
+    override fun signOut() = signOutFb()
 
 }

@@ -33,6 +33,7 @@ class RobotControllerRepositoryImpl @Inject constructor(
 ) : RobotControllerRepository {
 
     private val controlMode = app.observeControlModeState()
+
     private var currentMode = LOCAL_MODE
 
     // Local Mode
@@ -84,11 +85,12 @@ class RobotControllerRepositoryImpl @Inject constructor(
                 } else {
                     bleHelper.disconnectBle()
                     firebaseHelper.realtimeListener()
-                    firebaseHelper.signIn()
                 }
                 Log.d("BleImpl", "Current Mode: $it, CurrentModeFromController: $currentMode")
             }
+
         }
+
 
 
         wifiHelper.onWifiHasInternet = {

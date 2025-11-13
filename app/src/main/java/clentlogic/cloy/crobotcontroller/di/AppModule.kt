@@ -15,12 +15,16 @@ import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.AddCmd
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.DeleteCmd
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.GetAllCmd
 import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.UpdateCmd
-import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.dataflow.GetControlModeDataFlow
-import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.dataflow.GetPermissionsDataFlow
-import clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.dataflow.GetToggleButtonControlDataFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetControlMode
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetLoginCredential
 import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetPermissionState
-import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetToggleButtonState
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SetToggleControls
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.SignOutFb
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.dataflow.GetControlModeDataFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.dataflow.GetLoginCredential
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.dataflow.GetLoginStatus
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.dataflow.GetPermissionsDataFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.dataflow.GetToggleButtonControlsFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.ConnectRobot
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.DisconnectRobot
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.SendDataToRobot
@@ -28,8 +32,8 @@ import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.StopScanning
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetBluetoothStateFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetConnectionStateFlow
-import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetRobotModel
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetDeviceDataFlow
+import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetRobotModel
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetScanningStateFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetWifiConnectionStateFlow
 import clentlogic.cloy.crobotcontroller.domain.usecase.robot_controller_usecase.dataflow.GetWifiHasInternet
@@ -50,9 +54,11 @@ object AppModule {
     @Provides
     @Singleton
     fun provideDatabase(context: Application): CmdDatabase =
-        Room.databaseBuilder(context,
-        CmdDatabase::class.java,
-        "cmd_db").build()
+        Room.databaseBuilder(
+            context,
+            CmdDatabase::class.java,
+            "cmd_db"
+        ).build()
 
     @Provides
     @Singleton
@@ -85,15 +91,18 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideStartScanning(repository: RobotControllerRepository): StartScan = StartScan(repository)
+    fun provideStartScanning(repository: RobotControllerRepository): StartScan =
+        StartScan(repository)
 
     @Provides
     @Singleton
-    fun provideStopScanning(repository: RobotControllerRepository): StopScanning = StopScanning(repository)
+    fun provideStopScanning(repository: RobotControllerRepository): StopScanning =
+        StopScanning(repository)
 
     @Provides
     @Singleton
-    fun provideConnectBleDevice(repository: RobotControllerRepository): ConnectRobot = ConnectRobot(repository)
+    fun provideConnectBleDevice(repository: RobotControllerRepository): ConnectRobot =
+        ConnectRobot(repository)
 
     @Provides
     @Singleton
@@ -103,11 +112,13 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideSendDataToBle(repository: RobotControllerRepository): SendDataToRobot = SendDataToRobot(repository)
+    fun provideSendDataToBle(repository: RobotControllerRepository): SendDataToRobot =
+        SendDataToRobot(repository)
 
     @Provides
     @Singleton
-    fun provideUpdateData(repository: RobotControllerRepository): UpdateData = UpdateData(repository)
+    fun provideUpdateData(repository: RobotControllerRepository): UpdateData =
+        UpdateData(repository)
 
     @Provides
     @Singleton
@@ -147,13 +158,13 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideGetToggleButtonControlDataFlow(repository: DataStoreRepository): GetToggleButtonControlDataFlow =
-        GetToggleButtonControlDataFlow(repository)
+    fun provideGetToggleButtonControlDataFlow(repository: DataStoreRepository): GetToggleButtonControlsFlow =
+        GetToggleButtonControlsFlow(repository)
 
     @Provides
     @Singleton
-    fun provideSetToggleButtonState(repository: DataStoreRepository): SetToggleButtonState =
-        SetToggleButtonState(repository)
+    fun provideSetToggleButtonState(repository: DataStoreRepository): SetToggleControls =
+        SetToggleControls(repository)
 
 
     @Provides
@@ -190,11 +201,26 @@ object AppModule {
     fun provideWifiHasInternet(repository: RobotControllerRepository): GetWifiHasInternet =
         GetWifiHasInternet(repository)
 
+    @Provides
+    @Singleton
+    fun provideGetLoginCredential(repository: DataStoreRepository): GetLoginCredential =
+        GetLoginCredential(repository)
 
 
+    @Provides
+    @Singleton
+    fun provideSetLoginCredential(repository: DataStoreRepository): SetLoginCredential =
+        SetLoginCredential(repository)
 
+    @Provides
+    @Singleton
+    fun provideGetLoginStatus(repository: DataStoreRepository): GetLoginStatus =
+        GetLoginStatus(repository)
 
-
+    @Provides
+    @Singleton
+    fun provideSignOutFb(repository: DataStoreRepository): SignOutFb =
+        SignOutFb(repository)
 
 
 }

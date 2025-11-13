@@ -6,10 +6,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -27,6 +23,7 @@ import clentlogic.cloy.crobotcontroller.presentation.ui.screen.CheckPermissionCo
 import clentlogic.cloy.crobotcontroller.presentation.ui.screen.HomeScreen
 import clentlogic.cloy.crobotcontroller.presentation.ui.screen.ManageDeviceScreen
 import clentlogic.cloy.crobotcontroller.presentation.ui.screen.SettingsScreen
+import clentlogic.cloy.crobotcontroller.presentation.ui.screen.LoginScreen
 import clentlogic.cloy.crobotcontroller.presentation.ui.util.LandscapeCompose
 import clentlogic.cloy.crobotcontroller.presentation.viewmodel.MainViewModel
 
@@ -37,6 +34,7 @@ fun AppNavHost(
 ) {
     val navController = rememberNavController()
     val permission by viewModel.permissionFlow.collectAsState(null)
+    val loginStatus by viewModel.loginStatus.collectAsState(null)
 
 
     NavHost(
@@ -50,11 +48,10 @@ fun AppNavHost(
             when (permission) {
                 true -> {
                     LaunchedEffect(Unit) {
-                        navController.navigate("main_graph") {
+                        navController.navigate("login_screen") {
                             popUpTo("check_permission") { inclusive = true }
                         }
                     }
-
                 }
 
                 false -> {
@@ -81,6 +78,44 @@ fun AppNavHost(
 
         }
 
+        composable(
+            route = "login_screen"
+        ) {
+
+            when (loginStatus) {
+                true -> {
+                    LaunchedEffect(Unit) {
+                        navController.navigate("main_graph") {
+                            popUpTo("login_screen") { inclusive = true }
+                        }
+                    }
+
+                }
+
+                false -> {
+                    LoginScreen(
+                        viewModel,
+                        onLocal = {
+                            navController.navigate("main_graph")
+                        }
+                    )
+
+                }
+
+                else -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AnimatedLottieJson(R.raw.animated_hand_loading, 150.dp)
+                    }
+
+                }
+            }
+
+
+        }
+
         navigation(startDestination = "main", route = "main_graph") {
             composable("main") { backStackEntry ->
 
@@ -101,7 +136,7 @@ fun AppNavHost(
                     },
 
 
-                )
+                    )
             }
 
             composable("splash") {
@@ -114,7 +149,7 @@ fun AppNavHost(
                     ManageDeviceScreen(
                         viewModel,
                         onBackHandler = {
-                          navController.popBackStack()
+                            navController.popBackStack()
                         },
                         onDisconnectRobot = {
                             navController.popBackStack()
@@ -126,7 +161,13 @@ fun AppNavHost(
 
             }
             composable("settings_screen") {
-                SettingsScreen(viewModel)
+                SettingsScreen(
+                    viewModel,
+                    onLoginSettings = {
+                        navController.navigate("login_screen")
+                    }
+
+                )
             }
 
 

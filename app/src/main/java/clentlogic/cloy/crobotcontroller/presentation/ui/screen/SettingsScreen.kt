@@ -22,12 +22,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,17 +45,23 @@ import androidx.compose.ui.unit.sp
 import clentlogic.cloy.crobotcontroller.CRobotControllerApp.Companion.GLOBAL_MODE
 import clentlogic.cloy.crobotcontroller.CRobotControllerApp.Companion.LOCAL_MODE
 import clentlogic.cloy.crobotcontroller.R
+import clentlogic.cloy.crobotcontroller.domain.model.LoginCredential
 import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
 import clentlogic.cloy.crobotcontroller.presentation.model.LayoutModel
 import clentlogic.cloy.crobotcontroller.presentation.ui.components.ToggleSystemBars
 import clentlogic.cloy.crobotcontroller.presentation.ui.util.getScreenSize
+import kotlin.math.log
 
 
 @Composable
 fun SettingsScreen(
     viewModel: MainViewContract,
+    onLoginSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+
+    val loginCredential by viewModel.loginCredential.collectAsState(LoginCredential("", "", ""))
+    val loginStatus by viewModel.loginStatus.collectAsState(false)
 
     val screenSize = getScreenSize()
 
@@ -64,6 +72,7 @@ fun SettingsScreen(
     }
 
     var isControlModeVisible by remember { mutableStateOf(false) }
+    var isLoginCredentialVisible by remember { mutableStateOf(false) }
 
     val currentMode by viewModel.controlModeFlow.collectAsState(LOCAL_MODE)
 
@@ -72,6 +81,7 @@ fun SettingsScreen(
     BackHandler(isControlModeVisible) {
         isControlModeVisible = false
     }
+
 
 
     Box {
@@ -94,7 +104,12 @@ fun SettingsScreen(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = LocalIndication.current
                     ) {
-                        //
+                        if (loginStatus){
+                            isLoginCredentialVisible = !isLoginCredentialVisible
+                        }else {
+                            onLoginSettings()
+                        }
+
                     }
             ) {
                 Icon(
@@ -104,12 +119,17 @@ fun SettingsScreen(
                 )
                 Spacer(modifier.width(10.dp))
                 Column {
-                    Text("Username", style = MaterialTheme.typography.headlineSmall)
-                    Text(
-                        "user@gmail.com",
-                        color = Color.Black.copy(alpha = 0.6f),
-                        style = MaterialTheme.typography.labelSmall
-                    )
+                    Text(text =
+                        if(loginStatus) loginCredential.username else "LOGIN",
+                        style = MaterialTheme.typography.headlineSmall)
+                    if (loginStatus) {
+                        Text(
+                            text = loginCredential.email,
+                            color = Color.Black.copy(alpha = 0.6f),
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
+
                 }
                 Spacer(modifier.weight(1f))
                 Icon(
@@ -119,6 +139,7 @@ fun SettingsScreen(
                 )
             }
 
+            if (loginStatus)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = modifier
@@ -193,7 +214,6 @@ fun SettingsScreen(
 
             }
 
-
         }
 
     }
@@ -209,8 +229,88 @@ fun SettingsScreen(
         }
     )
 
+    AccountSettings(
+        viewModel,
+        layout,
+        isLoginCredentialVisible,
+        onLoginSettings,
+        onAccountSettingsVisible = {
+            isLoginCredentialVisible = false
+        }
+
+    )
+
 
 }
+
+
+
+@Composable
+private fun AccountSettings(
+    viewModel: MainViewContract,
+    layout: LayoutModel,
+    visible: Boolean,
+    onLoginSettings: () -> Unit,
+    onAccountSettingsVisible: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+
+    AnimatedVisibility(
+        visible = visible,
+        enter = slideInHorizontally(
+            initialOffsetX = { fullWidth -> -fullWidth },
+            animationSpec = tween(400)
+        ),
+        exit = slideOutHorizontally(
+            targetOffsetX = { fullWidth -> -fullWidth },
+            animationSpec = tween(400)
+
+        ),
+    ) {
+        Box(
+            modifier = modifier
+                .background(Color.White)
+                .fillMaxSize()
+                .padding(layout.padding)
+                .clickable(false) {}
+        ) {
+            Column(
+                modifier = modifier.fillMaxSize()
+            ) {
+                Spacer(modifier.height(40.dp))
+                Row {
+                    Icon(
+                        painterResource(R.drawable.back),
+                        contentDescription = null,
+                        modifier = modifier.clickable {
+                            onAccountSettingsVisible()
+
+                        }
+                    )
+                    Spacer(modifier.width(10.dp))
+                    Text("Account Settings", style = MaterialTheme.typography.displayMedium)
+                }
+                Spacer(modifier.height(20.dp))
+
+                Button(
+                    onClick = {
+                        viewModel.signOut()
+                        onLoginSettings()
+                    }
+                ){
+                    Text("Sign Out")
+                }
+
+
+            }
+
+
+        }
+    }
+
+}
+
+
 
 @Composable
 private fun ControlMode(

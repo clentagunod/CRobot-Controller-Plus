@@ -11,26 +11,26 @@ import com.google.firebase.database.ValueEventListener
 class FirebaseRealtimeDbHelper {
     //TODO: TEMPORARY FIREBASE SET UP, THIS WILL BE UPDATED SOON!
 
-    //TODO: Must refactor this for login page
-    private val email = "xyz@gmail.com"
-    private val password = "clent2003"
-
 
     private var valueEventListener: ValueEventListener? = null
     private val firebaseAuth = FirebaseAuth.getInstance()
     private val firebaseDb = FirebaseDatabase.getInstance()
     private val refRobotCrawler = firebaseDb.getReference("robot_crawler")
 
+
     var onDeviceConnectionState: ((List<RobotModel>) -> Unit)? = null
 
 
-    fun signIn(){
+    fun signIn(email: String, password: String, onSignIn: (Boolean, String) -> Unit) {
         firebaseAuth.signInWithEmailAndPassword(email, password).apply {
             addOnSuccessListener {
                 Log.d("LOGIN", "Login Successful! Result: $it")
+                onSignIn.invoke(true, it.user?.email ?: "Login Successful!")
+
             }
             addOnFailureListener {
                 Log.d("LOGIN", "Login Error! Result: $it")
+                onSignIn.invoke(false, it.message ?: "Error!")
             }
         }
 
@@ -69,6 +69,17 @@ class FirebaseRealtimeDbHelper {
             valueEventListener = null
         }
     }
+    fun signOut(onSignOut: (Boolean, String) -> Unit) {
+        try {
+            firebaseAuth.signOut()
+            Log.d("LOGOUT", "Logout Successful!")
+            onSignOut(true, "Logout Successful!")
+        } catch (e: Exception) {
+            Log.e("LOGOUT", "Logout Failed", e)
+            onSignOut(false, e.message ?: "Logout Failed!")
+        }
+    }
+
 
 
 

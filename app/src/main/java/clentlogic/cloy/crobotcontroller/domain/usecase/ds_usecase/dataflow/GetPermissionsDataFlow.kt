@@ -1,4 +1,4 @@
-package clentlogic.cloy.crobotcontroller.domain.usecase.db_usecase.dataflow
+package clentlogic.cloy.crobotcontroller.domain.usecase.ds_usecase.dataflow
 
 
 import clentlogic.cloy.crobotcontroller.domain.repository.DataStoreRepository

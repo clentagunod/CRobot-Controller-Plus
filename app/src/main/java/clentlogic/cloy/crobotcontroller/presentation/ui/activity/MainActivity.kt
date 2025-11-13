@@ -8,8 +8,11 @@ import clentlogic.cloy.crobotcontroller.data.communication.ble.BleHelper
 import clentlogic.cloy.crobotcontroller.data.communication.ble.BlePermissionHandler
 import clentlogic.cloy.crobotcontroller.data.communication.wifi.WifiHelper
 import clentlogic.cloy.crobotcontroller.data.remote.firebase.FirebaseRealtimeDbHelper
+import clentlogic.cloy.crobotcontroller.presentation.fakes.models.FakeViewModel
 import clentlogic.cloy.crobotcontroller.presentation.ui.navigation.AppNavHost
+import clentlogic.cloy.crobotcontroller.presentation.ui.screen.ManageDeviceScreen
 import clentlogic.cloy.crobotcontroller.presentation.ui.theme.CRobotControllerTheme
+import clentlogic.cloy.crobotcontroller.presentation.ui.util.LandscapeCompose
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -35,7 +38,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             CRobotControllerTheme {
-                AppNavHost(blePermissionHandler)
+              AppNavHost(blePermissionHandler)
             }
 
         }

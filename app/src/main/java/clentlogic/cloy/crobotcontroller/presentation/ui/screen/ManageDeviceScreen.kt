@@ -65,11 +65,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.viewmodel.compose.viewModel
 import clentlogic.cloy.crobotcontroller.CRobotControllerApp.Companion.GLOBAL_MODE
 import clentlogic.cloy.crobotcontroller.CRobotControllerApp.Companion.LOCAL_MODE
 import clentlogic.cloy.crobotcontroller.R
+import clentlogic.cloy.crobotcontroller.data.local.datastore.AppPreferences.TOGGLE_CAMERA
+import clentlogic.cloy.crobotcontroller.data.local.datastore.AppPreferences.TOGGLE_CONTROL_BUTTON
+import clentlogic.cloy.crobotcontroller.data.local.datastore.AppPreferences.TOGGLE_FLASH
+import clentlogic.cloy.crobotcontroller.data.local.datastore.AppPreferences.TOGGLE_SLEEP_MODE
 import clentlogic.cloy.crobotcontroller.domain.model.BleConnectionState
+import clentlogic.cloy.crobotcontroller.domain.model.ToggleControls
 import clentlogic.cloy.crobotcontroller.domain.model.WifiConnectionState
 import clentlogic.cloy.crobotcontroller.domain.model.WifiState
 import clentlogic.cloy.crobotcontroller.presentation.contracts.MainViewContract
@@ -314,11 +318,23 @@ private fun ManageDeviceContent(
 ) {
 
 
-    val showRobotController by viewModel.toggleControlButtonFlow.collectAsState(false)
-    var localShowRobotController by remember { mutableStateOf(showRobotController) }
+    val toggles by viewModel.toggleControls.collectAsState(ToggleControls(
+        toggleControl = false,
+        toggleSleep = false,
+        toggleCamera = false,
+        toggleFlash = false
+    ))
 
-    LaunchedEffect(showRobotController) {
-        localShowRobotController = showRobotController
+    var controlKeys by remember { mutableStateOf(toggles.toggleControl) }
+    var sleepMode by remember { mutableStateOf(toggles.toggleSleep) }
+    var cameraOn by remember { mutableStateOf(toggles.toggleCamera) }
+    var flash by remember { mutableStateOf(toggles.toggleFlash) }
+
+    LaunchedEffect(toggles) {
+        controlKeys = toggles.toggleControl
+        sleepMode = toggles.toggleSleep
+        cameraOn = toggles.toggleCamera
+        flash = toggles.toggleFlash
     }
 
 
@@ -329,7 +345,7 @@ private fun ManageDeviceContent(
                 .fillMaxSize()
                 .padding(layout.padding)
         ) {
-            if (localShowRobotController) {
+            if (controlKeys) {
                 RobotController(
                     layout,
                     modifier = modifier.align(Alignment.BottomEnd),
@@ -347,11 +363,23 @@ private fun ManageDeviceContent(
             layout,
             toggle,
             deviceName,
-            localShowRobotController,
+            controlKeys,
+            sleepMode,
+            cameraOn,
+            flash,
             onRefresh,
             controlMode,
-            onToggleButtonChange = {
-                localShowRobotController = it
+            onToggleControlChange = {
+                controlKeys = it
+            },
+            onToggleSleepChange = {
+                sleepMode = it
+            },
+            onToggleCameraChange = {
+                cameraOn = it
+            },
+            onToggleFlashChange = {
+                flash = it
             },
             onDisconnectRobot,
         )
@@ -403,10 +431,16 @@ private fun ToggleControlConfig(
     layout: LayoutModel,
     toggle: Boolean,
     deviceName: String,
-    localShowRobotController: Boolean,
+    controlKeys: Boolean,
+    sleepMode: Boolean,
+    cameraOn: Boolean,
+    flash: Boolean,
     onRefresh: () -> Unit,
     controlMode: String,
-    onToggleButtonChange: (Boolean) -> Unit,
+    onToggleControlChange: (Boolean) -> Unit,
+    onToggleSleepChange: (Boolean) -> Unit,
+    onToggleCameraChange: (Boolean) -> Unit,
+    onToggleFlashChange: (Boolean) -> Unit,
     onDisconnectRobot: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -498,11 +532,21 @@ private fun ToggleControlConfig(
 
                 ControlsConfig(
                     viewModel,
-                    localShowRobotController,
-                    onToggleButtonChange
+                    controlKeys,
+                    onToggleControlChange
                 )
-                WakeCycle()
-                CameraConfig()
+                WakeCycle(
+                    viewModel,
+                    sleepMode,
+                    onToggleSleepChange
+                )
+                CameraConfig(
+                    viewModel,
+                    cameraOn,
+                    flash,
+                    onToggleCameraChange,
+                    onToggleFlashChange
+                )
                 Spacer(modifier.height(20.dp))
                 DisconnectRobot(
                     viewModel,
@@ -524,7 +568,7 @@ private fun ToggleControlConfig(
 @Composable
 private fun ControlsConfig(
     viewModel: MainViewContract,
-    localShowRobotController: Boolean,
+    controlKeys: Boolean,
     onToggleButtonChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -545,11 +589,10 @@ private fun ControlsConfig(
     ) {
         Text("Control", color = Color.White)
         ToggleSwitchElements(
-            isSwitchEnabled = localShowRobotController,
+            isSwitchEnabled = controlKeys,
             onSwitchEnabled = {
                 onToggleButtonChange(it)
-                viewModel.setToggleControlButtonState(it)
-
+                viewModel.setToggleControls(it, TOGGLE_CONTROL_BUTTON)
             }
         )
 
@@ -563,6 +606,9 @@ private fun ControlsConfig(
 
 @Composable
 private fun WakeCycle(
+    viewModel: MainViewContract,
+    sleepMode: Boolean,
+    onToggleSleepChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
 
@@ -580,7 +626,15 @@ private fun WakeCycle(
             .fillMaxWidth()
     ) {
         Text("Sleep", color = Color.White)
-        ToggleSwitchElements()
+        ToggleSwitchElements(
+            sleepMode,
+            onSwitchEnabled = {
+                onToggleSleepChange(it)
+                viewModel.setToggleControls(it, TOGGLE_SLEEP_MODE)
+                viewModel.sendDataToRobot(if (it) byteArrayOf(0x64, 0x00, 0x00, 0x00) else byteArrayOf(0x63, 0x00, 0x00, 0x00))
+            }
+
+        )
 
     }
 
@@ -590,6 +644,11 @@ private fun WakeCycle(
 
 @Composable
 private fun CameraConfig(
+    viewModel: MainViewContract,
+    cameraOn: Boolean,
+    flash: Boolean,
+    onToggleCameraChange: (Boolean) -> Unit,
+    onToggleFlashChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
 
@@ -608,7 +667,14 @@ private fun CameraConfig(
             .fillMaxWidth()
     ) {
         Text("Camera", color = Color.White)
-        ToggleSwitchElements()
+        ToggleSwitchElements(
+            cameraOn,
+            onSwitchEnabled = {
+                onToggleCameraChange(it)
+                viewModel.setToggleControls(it, TOGGLE_CAMERA)
+            }
+
+        )
 
     }
     Row(
@@ -618,7 +684,15 @@ private fun CameraConfig(
             .fillMaxWidth()
     ) {
         Text("Light", color = Color.White)
-        ToggleSwitchElements()
+        ToggleSwitchElements(
+            flash,
+            onSwitchEnabled = {
+                onToggleFlashChange(it)
+                viewModel.setToggleControls(it, TOGGLE_FLASH)
+
+            }
+
+        )
 
     }
 
@@ -854,11 +928,11 @@ private fun ControlButton(
                         awaitFirstDown(requireUnconsumed = false)
                         isPressed = true
 
-                        viewModel.sendDataToBleDevice(cmd)
+                        viewModel.sendDataToRobot(cmd)
 
 
                         waitForUpOrCancellation()
-                        viewModel.sendDataToBleDevice(byteArrayOf(0x00, 0x00, 0x00, 0x00)) //
+                        viewModel.sendDataToRobot(byteArrayOf(0x00, 0x00, 0x00, 0x00)) //
                         isPressed = false
                     }
                 }
